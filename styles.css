@@ -1,0 +1,219 @@
+:root {
+  color-scheme: dark;
+  --background: #0f1522;
+  --surface: #182236;
+  --surface-high: #202d46;
+  --border: #344260;
+  --text: #f4f7ff;
+  --muted: #adb8cf;
+  --accent: #79a7ff;
+  --accent-strong: #497ce2;
+  --danger: #ff8c98;
+  --current: #c9a458;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--background);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button, input { font: inherit; }
+button { cursor: pointer; }
+
+.app-shell {
+  width: min(1180px, calc(100% - 32px));
+  margin: 24px auto 48px;
+}
+
+.topbar, .controls, .section-heading, .hidden-toggle {
+  display: flex;
+  align-items: center;
+}
+
+.topbar {
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.75rem;
+}
+
+h1, h2, h3, p { margin-top: 0; }
+h1 { margin-bottom: 0; font-size: 1.5rem; }
+
+.round-panel {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.round-panel span { color: var(--muted); }
+.round-panel strong { font-size: 2.5rem; line-height: 1; }
+
+.button {
+  min-height: 42px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  background: var(--surface-high);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.button:hover { border-color: var(--accent); }
+.button:focus-visible, input:focus-visible { outline: 3px solid rgba(121, 167, 255, 0.35); outline-offset: 2px; }
+.button-primary { background: var(--accent-strong); border-color: var(--accent); }
+.button-danger { color: #fff0f1; border-color: #7f4149; }
+.button-small { min-height: 34px; padding: 5px 9px; font-size: 0.82rem; }
+
+.controls {
+  gap: 16px;
+  margin: 16px 0 24px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.participant-form {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  flex: 1;
+}
+
+.participant-form label, .annotation-form label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.participant-form label:first-child { flex: 1; }
+
+input {
+  height: 42px;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #101726;
+  color: var(--text);
+}
+
+.section-heading { justify-content: space-between; margin-bottom: 10px; }
+.section-heading h2 { margin: 0; font-size: 1.05rem; }
+.count { color: var(--muted); font-weight: 700; }
+
+.participant-list { display: grid; gap: 10px; }
+
+.participant-card {
+  display: grid;
+  grid-template-columns: 74px minmax(220px, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.participant-card.is-current {
+  border: 2px solid var(--current);
+  background: #262b35;
+}
+
+.initiative-badge {
+  min-height: 62px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  border-radius: 10px;
+  background: var(--surface-high);
+  border: 1px solid var(--border);
+}
+
+.initiative-badge span { color: var(--muted); font-size: 0.65rem; letter-spacing: 0.12em; }
+.initiative-badge strong { font-size: 1.55rem; }
+
+.participant-title-row { display: flex; align-items: center; gap: 10px; min-height: 30px; }
+.participant-name { margin: 0; }
+.current-label { border: 1px solid var(--current); color: #ecd48f; border-radius: 999px; padding: 3px 7px; font-size: 0.68rem; font-weight: 800; }
+
+.participant-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: end; }
+
+.annotations { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; }
+.annotation {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  background: #111827;
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-size: 0.82rem;
+}
+.annotation-text { overflow-wrap: anywhere; }
+.annotation-delete { border: 0; background: transparent; color: var(--muted); padding: 0 2px; }
+
+.annotation-form { display: flex; align-items: end; gap: 8px; }
+.annotation-form input[type="text"] { width: 260px; }
+.round-input input { width: 74px; }
+.infinite-label { height: 42px; display: flex !important; grid-auto-flow: column; align-items: center; white-space: nowrap; }
+.infinite-label input { width: 16px; height: 16px; }
+
+.hidden-section { margin-top: 18px; border-top: 1px solid var(--border); padding-top: 12px; }
+.hidden-toggle {
+  width: 100%;
+  gap: 10px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  padding: 8px 0;
+  text-align: left;
+  font-weight: 800;
+}
+.hidden-list { margin-top: 8px; }
+.hidden-list .participant-card { opacity: 0.72; }
+
+.dialog-card { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text); }
+dialog { border: 0; padding: 0; background: transparent; }
+dialog::backdrop { background: rgba(5, 8, 14, 0.75); }
+.dialog-actions { display: flex; justify-content: end; gap: 8px; }
+
+@media (max-width: 820px) {
+  .topbar, .controls { align-items: stretch; }
+  .topbar { flex-wrap: wrap; }
+  .round-panel { margin-left: 0; }
+  .controls { flex-direction: column; }
+  .participant-card { grid-template-columns: 64px 1fr; }
+  .participant-actions { grid-column: 1 / -1; justify-content: start; }
+}
+
+@media (max-width: 560px) {
+  .app-shell { width: min(100% - 20px, 1180px); margin-top: 10px; }
+  .topbar { align-items: start; }
+  .topbar h1 { font-size: 1.15rem; }
+  .topbar > .button { width: 100%; }
+  .participant-form { display: grid; grid-template-columns: 1fr 90px; }
+  .participant-form .button { grid-column: 1 / -1; }
+  .participant-card { grid-template-columns: 56px 1fr; }
+  .annotation-form { flex-wrap: wrap; }
+  .annotation-form input[type="text"] { width: 100%; }
+}

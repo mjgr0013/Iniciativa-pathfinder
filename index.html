@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#172033">
+  <title>Iniciativa Pathfinder</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Encuentro</p>
+        <h1>Rastreador de iniciativa</h1>
+      </div>
+      <div class="round-panel" aria-live="polite">
+        <span>Ronda</span>
+        <strong id="round-number">1</strong>
+      </div>
+      <button id="reset-button" class="button button-danger" type="button">Reiniciar todo</button>
+    </header>
+
+    <section class="controls" aria-label="Controles del encuentro">
+      <button id="next-button" class="button button-primary" type="button">Siguiente participante</button>
+
+      <form id="participant-form" class="participant-form">
+        <label>
+          Nombre
+          <input id="participant-name" name="name" type="text" autocomplete="off" required>
+        </label>
+        <label>
+          Iniciativa
+          <input id="participant-init" name="initiative" type="number" step="1" value="0" required>
+        </label>
+        <button class="button" type="submit">Añadir participante</button>
+      </form>
+    </section>
+
+    <section>
+      <div class="section-heading">
+        <h2>Participantes activos</h2>
+        <span id="active-count" class="count"></span>
+      </div>
+      <div id="active-list" class="participant-list"></div>
+    </section>
+
+    <section class="hidden-section">
+      <button id="hidden-toggle" class="hidden-toggle" type="button" aria-expanded="false">
+        <span>Participantes ocultos</span>
+        <span id="hidden-count" class="count">0</span>
+        <span id="hidden-chevron" aria-hidden="true">▸</span>
+      </button>
+      <div id="hidden-list" class="participant-list hidden-list" hidden></div>
+    </section>
+  </main>
+
+  <dialog id="reset-dialog">
+    <form method="dialog" class="dialog-card">
+      <h2>¿Reiniciar el encuentro?</h2>
+      <p>Se borrarán los participantes añadidos y las anotaciones. Gorr, Lyra, Caedren, Kumiko y Adriana volverán con iniciativa 0.</p>
+      <div class="dialog-actions">
+        <button class="button" value="cancel">Cancelar</button>
+        <button id="confirm-reset" class="button button-danger" value="confirm">Reiniciar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <template id="participant-template">
+    <article class="participant-card">
+      <div class="initiative-badge">
+        <span>INI</span>
+        <strong></strong>
+      </div>
+      <div class="participant-info">
+        <div class="participant-title-row">
+          <h3 class="participant-name"></h3>
+          <span class="current-label" hidden>ACTUAL</span>
+        </div>
+        <div class="annotations"></div>
+        <form class="annotation-form">
+          <input name="text" type="text" placeholder="Nueva anotación" aria-label="Texto de la anotación" required>
+          <label class="round-input">
+            Rondas
+            <input name="rounds" type="number" min="1" step="1" value="1">
+          </label>
+          <label class="infinite-label">
+            <input name="infinite" type="checkbox">
+            Infinita
+          </label>
+          <button class="button button-small" type="submit">Añadir</button>
+        </form>
+      </div>
+      <div class="participant-actions">
+        <button class="button button-small edit-button" type="button">Editar</button>
+        <button class="button button-small hide-button" type="button">Ocultar</button>
+        <button class="button button-small restore-button" type="button" hidden>Mostrar</button>
+        <button class="button button-small remove-button" type="button">Eliminar</button>
+      </div>
+    </article>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
