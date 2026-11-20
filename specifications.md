@@ -8,6 +8,8 @@
 
 Aplicación web para que un director de juego gestione el orden de iniciativa durante un encuentro de Pathfinder. Permite añadir participantes con un valor numérico de iniciativa, verlos ordenados, avanzar al participante actual con un botón, llevar el contador de rondas, gestionar anotaciones temporales o permanentes y ocultar participantes que hayan muerto sin eliminarlos del encuentro.
 
+Los participantes Gorr, Lyra, Caedren, Kumiko y Adriana estarán disponibles siempre como participantes predeterminados del encuentro.
+
 ## Problema
 
 Durante un encuentro, el director de juego necesita consultar rápidamente quién actúa ahora, quién sigue, en qué ronda está el combate y qué anotaciones siguen vigentes para cada participante. La aplicación debe facilitar ese seguimiento desde un ordenador, con una interfaz clara y acciones principales accesibles.
@@ -15,6 +17,26 @@ Durante un encuentro, el director de juego necesita consultar rápidamente quié
 ## Usuario principal
 
 - **Director/a de juego:** añade participantes y anotaciones, controla el avance de los turnos y las rondas, y oculta o restaura participantes.
+
+## Participantes predeterminados
+
+Al iniciar un encuentro nuevo o reiniciar el encuentro actual, la aplicación debe crear automáticamente estos participantes:
+
+1. Gorr
+2. Lyra
+3. Caedren
+4. Kumiko
+5. Adriana
+
+**Escenarios de aceptación:**
+
+- Los cinco participantes aparecen como activos al iniciar o reiniciar, a menos que exista una decisión posterior de persistencia que indique lo contrario.
+- Al iniciar sin datos, los participantes deben tener la iniciativa establecida en 0 hasta que el director introduzca otra.
+- El usuario puede cambiar la iniciativa de cualquier participante predeterminado.
+- El usuario puede ocultar cualquier participante predeterminado sin eliminarlo permanentemente.
+- El usuario puede restaurar cualquier participante predeterminado oculto.
+- El usuario puede eliminar permanentemente un participante predeterminado si la interfaz permite esa acción.
+- El reinicio elimina los participantes adicionales y restablece Gorr, Lyra, Caedren, Kumiko y Adriana.
 
 ## Historias de usuario y escenarios
 
@@ -29,6 +51,7 @@ Como director/a de juego, quiero añadir participantes con su nombre y su númer
 - La lista se ordena automáticamente de mayor a menor iniciativa; el valor más alto actúa primero.
 - Si hay empate, se conserva el orden en que se añadieron los participantes empatados.
 - La aplicación informa de forma clara si falta el nombre o la iniciativa no es válida.
+- Los participantes Gorr, Lyra, Caedren, Kumiko y Adriana ya existen y pueden editarse sin tener que volver a añadirse.
 
 ### US2 — Avanzar al siguiente participante
 
@@ -82,13 +105,13 @@ Como director/a de juego, quiero ocultar a un participante que ha muerto para re
 
 ### US6 — Reiniciar el encuentro
 
-Como director/a de juego, quiero reiniciar todo el encuentro para empezar de nuevo sin datos anteriores.
+Como director/a de juego, quiero reiniciar el encuentro para empezar de nuevo sin participantes ni anotaciones adicionales.
 
 **Escenarios de aceptación:**
 
 - Hay un botón claramente identificado para reiniciar todo.
 - Antes de reiniciar, la aplicación pide confirmación para evitar una pérdida accidental.
-- Al confirmar, se eliminan todos los participantes, sus anotaciones y estados, y el contador vuelve a la ronda 1 sin participante actual.
+- Al confirmar, se eliminan los participantes adicionales y sus anotaciones, se restablecen Gorr, Lyra, Caedren, Kumiko y Adriana como participantes activos con iniciativa 0 y sin anotaciones, y el contador vuelve a la ronda 1.
 - Si se cancela la confirmación, el encuentro permanece sin cambios.
 
 ## Requisitos funcionales
@@ -106,9 +129,10 @@ Como director/a de juego, quiero reiniciar todo el encuentro para empezar de nue
 - **FR-011:** La aplicación debe permitir ocultar participantes sin eliminarlos y mostrarlos en una sección separada, al final y colapsada por defecto.
 - **FR-012:** Los participantes ocultos no deben participar en el orden de turnos ni en el cálculo de fin de ronda; debe ser posible restaurarlos.
 - **FR-013:** La aplicación debe proporcionar un botón para reiniciar todo el encuentro, con confirmación antes de eliminar los datos.
-- **FR-014:** Al reiniciar, deben borrarse participantes, anotaciones y estados, y la ronda debe volver a 1.
-- **FR-015:** La aplicación debe validar las entradas y comunicar errores de forma comprensible.
-- **FR-016:** La aplicación debe ejecutarse enteramente en el navegador, con frontend y lógica escritos en JavaScript, sin requerir backend.
+- **FR-014:** Al reiniciar, deben eliminarse los participantes adicionales y sus anotaciones, restableciéndose Gorr, Lyra, Caedren, Kumiko y Adriana con iniciativa 0, sin anotaciones y visibles.
+- **FR-015:** La aplicación debe permitir modificar el nombre y la iniciativa de los participantes predeterminados.
+- **FR-016:** La aplicación debe validar las entradas y comunicar errores de forma comprensible.
+- **FR-017:** La aplicación debe ejecutarse enteramente en el navegador, con frontend y lógica escritos en JavaScript, sin requerir backend.
 
 ## Requisitos no funcionales
 
@@ -121,12 +145,13 @@ Como director/a de juego, quiero reiniciar todo el encuentro para empezar de nue
 
 ## Criterios de éxito
 
-- El director de juego puede añadir participantes y verlos ordenados correctamente por iniciativa.
+- Al iniciar o reiniciar, Gorr, Lyra, Caedren, Kumiko y Adriana están presentes y pueden editarse.
+- El director de juego puede añadir otros participantes y verlos ordenados correctamente por iniciativa.
 - El botón de avance actualiza el participante actual y aumenta la ronda exactamente al completar una vuelta de la lista activa.
 - Las anotaciones temporales descuentan rondas y expiran cuando corresponde.
 - Las anotaciones infinitas permanecen hasta su eliminación manual.
 - Los participantes ocultos quedan fuera del orden activo, pero se pueden revisar y restaurar.
-- El reinicio elimina los datos del encuentro solo después de confirmar y deja la aplicación en la ronda 1 vacía.
+- El reinicio elimina participantes adicionales y configuraciones modificadas solo después de confirmar, dejando los cinco participantes predeterminados con iniciativa 0.
 - La interfaz permite operar el seguimiento del encuentro cómodamente desde un ordenador.
 
 ## Entidades principales
@@ -144,6 +169,9 @@ Como director/a de juego, quiero reiniciar todo el encuentro para empezar de nue
 
 ## Decisiones de comportamiento
 
+- Los participantes predeterminados son Gorr, Lyra, Caedren, Kumiko y Adriana.
+- Los cinco participantes se crean al iniciar un encuentro nuevo y al reiniciar.
+- Al reiniciar tienen iniciativa 0, están visibles y sin anotaciones.
 - La lista activa se ordena de mayor a menor iniciativa, por lo que el número más alto actúa primero.
 - En caso de empate, se mantiene el orden de inserción.
 - El participante actual es el primero de la lista activa.
@@ -151,7 +179,7 @@ Como director/a de juego, quiero reiniciar todo el encuentro para empezar de nue
 - Una ronda se considera completada cuando todos los participantes activos han actuado y el turno vuelve al primero.
 - Las anotaciones finitas de participantes activos descuentan duración al completar una ronda; las infinitas no expiran automáticamente.
 - Los participantes ocultos permanecen guardados en el estado del encuentro, en una sección colapsada al final, y no actúan hasta que se restauren.
-- Reiniciar requiere confirmación y borra todos los datos del encuentro, incluidos participantes ocultos y anotaciones.
+- Reiniciar requiere confirmación y restablece todos los datos del encuentro a los participantes predeterminados.
 
 ## Pendiente de decisión
 
