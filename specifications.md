@@ -1,129 +1,125 @@
 # Especificación: Iniciativa Pathfinder
 
-> **Estado:** borrador inicial para GitHub Spec Kit  
-> **Nota:** el repositorio no contiene todavía archivos ni una descripción del producto. Esta propuesta interpreta, a partir del nombre del repositorio, que se desea una herramienta para gestionar la iniciativa de encuentros de Pathfinder. Confirma o ajusta las decisiones marcadas como supuestos antes de implementar.
+> **Estado:** especificación inicial para GitHub Spec Kit  
+> **Idioma de la interfaz:** español  
+> **Plataforma:** aplicación web de frontend; toda la lógica se implementará en JavaScript, sin backend.
 
 ## Resumen
 
-Crear una aplicación sencilla que permita a un director de juego (DJ) preparar y gestionar el orden de iniciativa durante encuentros de Pathfinder. El DJ podrá añadir personajes y criaturas, ordenar participantes por iniciativa y actualizar el estado del encuentro mientras juega.
+Aplicación web para que un director de juego gestione el orden de iniciativa durante un encuentro de Pathfinder. Permite añadir participantes con un valor numérico de iniciativa, verlos ordenados, avanzar el participante actual con un botón, llevar el contador de rondas y gestionar anotaciones temporales o permanentes para cada participante.
 
 ## Problema
 
-Durante un encuentro, llevar el orden de los turnos y recordar qué participantes siguen activos puede distraer al DJ del juego. Una herramienta enfocada en iniciativa debería hacer visible quién actúa ahora y quién va después, y permitir actualizar el encuentro con pocas acciones.
+Durante un encuentro, el director de juego necesita consultar rápidamente quién actúa ahora, quién sigue, en qué ronda está el combate y qué anotaciones siguen vigentes para cada participante. La aplicación debe facilitar ese seguimiento desde un ordenador, con una interfaz clara y acciones principales accesibles.
 
-## Usuarios
+## Usuario principal
 
-- **Director/a de juego:** crea y controla el encuentro.
-- **Jugador/a:** consulta el orden y el estado del encuentro, si la aplicación ofrece una vista compartida.
+- **Director/a de juego:** añade participantes y anotaciones, y controla el avance de los turnos y las rondas.
 
 ## Historias de usuario y escenarios
 
-### US1 — Preparar participantes
+### US1 — Añadir participantes
 
-Como DJ, quiero añadir personajes y criaturas a un encuentro para tener a todos los participantes en una sola lista.
-
-**Escenarios de aceptación:**
-
-- Dado un encuentro, cuando el DJ añade un participante con nombre e iniciativa, entonces aparece en la lista del encuentro.
-- El DJ puede distinguir los participantes por su nombre y, opcionalmente, por su tipo (personaje, criatura u otro).
-- Si faltan datos obligatorios o son inválidos, la aplicación explica qué debe corregirse y no añade el participante incompleto.
-
-### US2 — Determinar el orden
-
-Como DJ, quiero ordenar a los participantes por su resultado de iniciativa para saber quién actúa primero.
+Como director/a de juego, quiero añadir participantes con su nombre y su número de iniciativa para preparar el orden de actuación.
 
 **Escenarios de aceptación:**
 
-- La lista se ordena de mayor a menor iniciativa.
-- Si dos o más participantes empatan, el orden entre ellos se resuelve de forma consistente y el DJ puede ajustarlo manualmente.
-- El orden actual es claramente visible.
+- Al añadir un participante con nombre e iniciativa válidos, aparece en la lista.
+- La iniciativa se acepta y valida como número.
+- La lista se ordena automáticamente de mayor a menor iniciativa; el valor más alto actúa primero.
+- Si hay empate, se conserva el orden en que se añadieron los participantes empatados.
+- La aplicación informa de forma clara si falta el nombre o la iniciativa no es válida.
 
-### US3 — Avanzar los turnos
+### US2 — Avanzar al siguiente participante
 
-Como DJ, quiero avanzar al siguiente participante y a la siguiente ronda para controlar el progreso del encuentro.
-
-**Escenarios de aceptación:**
-
-- El participante cuyo turno está activo se identifica claramente.
-- El DJ puede avanzar al siguiente participante.
-- Al terminar una ronda, la aplicación inicia la siguiente y conserva el orden de iniciativa.
-- El DJ puede volver a seleccionar un participante si avanza por error.
-
-### US4 — Actualizar el estado de participantes
-
-Como DJ, quiero marcar participantes como activos o fuera de combate para que el orden refleje el estado del encuentro.
+Como director/a de juego, quiero avanzar con un botón para actualizar quién es el participante actual.
 
 **Escenarios de aceptación:**
 
-- El DJ puede cambiar el estado de un participante sin borrarlo del encuentro.
-- Los participantes fuera de combate se distinguen visualmente y no reciben el turno activo automáticamente, salvo que el DJ decida lo contrario.
+- El primer participante de la lista es siempre el actual y se destaca visualmente.
+- Al pulsar el botón de avanzar, el siguiente participante de la lista pasa a ser el primero.
+- Al avanzar desde el último participante, el turno vuelve al primero y comienza una nueva ronda.
+- Si no hay participantes, el botón no avanza el turno ni incrementa la ronda.
 
-### US5 — Corregir el encuentro
+### US3 — Consultar el contador de rondas
 
-Como DJ, quiero editar o eliminar participantes para corregir errores o reflejar cambios durante la partida.
+Como director/a de juego, quiero ver la ronda actual para saber cuánto ha avanzado el encuentro.
 
 **Escenarios de aceptación:**
 
-- El DJ puede cambiar el nombre, la iniciativa y el tipo de un participante.
-- El DJ puede eliminar un participante, con una confirmación o mecanismo que evite una eliminación accidental.
-- Tras una edición, el orden y el turno activo quedan en un estado coherente.
+- El contador comienza en la ronda 1 cuando empieza el seguimiento del encuentro.
+- La ronda aumenta en uno cuando todos los participantes han actuado y el turno vuelve al primero.
+- El número de ronda actual está visible en la interfaz.
+
+### US4 — Añadir y gestionar anotaciones
+
+Como director/a de juego, quiero añadir anotaciones a cada participante con una duración en rondas o permanente para recordar efectos o información relevante.
+
+**Escenarios de aceptación:**
+
+- Cada participante puede tener cero o más anotaciones.
+- Una anotación incluye un texto y una duración: un número de rondas o duración infinita.
+- Las anotaciones con duración finita muestran cuántas rondas les quedan.
+- Al completarse una ronda, las anotaciones finitas reducen su duración restante en una ronda.
+- Una anotación finita se elimina automáticamente cuando su duración llega a cero.
+- Una anotación infinita permanece hasta que el director de juego la quite manualmente.
+- El director de juego puede quitar manualmente cualquier anotación antes de que expire.
+- La interfaz distingue las anotaciones permanentes de las temporales sin depender únicamente del color.
 
 ## Requisitos funcionales
 
-- **FR-001:** La aplicación debe permitir crear y gestionar un encuentro.
-- **FR-002:** Cada participante debe tener un nombre y un valor de iniciativa.
-- **FR-003:** La aplicación debe ordenar participantes de mayor a menor iniciativa.
-- **FR-004:** La aplicación debe indicar el participante activo y la ronda actual.
-- **FR-005:** El DJ debe poder avanzar el turno y la ronda, y corregir el participante activo.
-- **FR-006:** El DJ debe poder editar, retirar y eliminar participantes.
-- **FR-007:** La aplicación debe validar los datos de entrada y comunicar errores de forma comprensible.
-- **FR-008:** La aplicación debe conservar los cambios durante la sesión de uso. La persistencia entre sesiones queda pendiente de decisión.
-- **FR-009:** La gestión del encuentro debe poder usarse sin automatizar reglas de combate que no estén definidas en esta especificación.
+- **FR-001:** La aplicación debe permitir añadir participantes con nombre e iniciativa numérica.
+- **FR-002:** La lista debe ordenarse automáticamente de mayor a menor iniciativa; el valor más alto va primero.
+- **FR-003:** Los empates deben conservar el orden de inserción.
+- **FR-004:** El primer participante de la lista debe ser el participante actual.
+- **FR-005:** Un botón debe avanzar al siguiente participante y reorganizar la lista para que el actual quede primero.
+- **FR-006:** La ronda debe comenzar en 1 y aumentar cuando todos los participantes hayan actuado y el turno vuelva al primero.
+- **FR-007:** La aplicación debe permitir añadir varias anotaciones a cada participante.
+- **FR-008:** Cada anotación debe tener texto y una duración finita expresada en rondas o duración infinita.
+- **FR-009:** Las anotaciones finitas deben reducir su duración al completar cada ronda y eliminarse al llegar a cero.
+- **FR-010:** El usuario debe poder eliminar manualmente anotaciones, incluidas las infinitas.
+- **FR-011:** La aplicación debe validar las entradas y comunicar errores de forma comprensible.
+- **FR-012:** La aplicación debe ejecutarse enteramente en el navegador, con frontend y lógica escritos en JavaScript, sin requerir backend.
 
 ## Requisitos no funcionales
 
-- **NFR-001:** Las acciones principales del DJ (añadir participante y avanzar turno) deben ser sencillas de encontrar y ejecutar.
-- **NFR-002:** La interfaz debe mantener legibles los nombres, iniciativas, estado y turno activo en tamaños de pantalla habituales.
-- **NFR-003:** Los mensajes y controles deben ser comprensibles sin depender exclusivamente del color.
-- **NFR-004:** La aplicación no debe presentar como oficiales reglas o cálculos de Pathfinder que no se hayan especificado y verificado.
+- **NFR-001:** La interfaz debe estar optimizada principalmente para uso en PC y escritorio.
+- **NFR-002:** El participante actual, el orden, la ronda y las anotaciones deben poder identificarse de un vistazo.
+- **NFR-003:** Añadir participantes y avanzar turnos deben ser acciones sencillas y claramente accesibles.
+- **NFR-004:** La interfaz debe seguir siendo utilizable en pantallas más pequeñas, aunque el uso principal sea en PC.
+- **NFR-005:** La información importante no debe distinguirse exclusivamente mediante colores.
+- **NFR-006:** La solución debe utilizar JavaScript para la aplicación y no depender de servicios de servidor.
 
 ## Criterios de éxito
 
-- Un DJ puede crear un encuentro y añadir participantes sin instrucciones externas.
-- El orden de iniciativa y el turno activo se entienden de un vistazo.
-- El DJ puede completar una ronda y corregir un avance accidental sin perder la lista.
-- Los errores de validación indican cómo corregir la entrada.
+- El director de juego puede añadir participantes y verlos ordenados correctamente por iniciativa.
+- El botón de avance actualiza el participante actual y aumenta la ronda exactamente al completar una vuelta de la lista.
+- Las anotaciones temporales descuentan rondas y expiran cuando corresponde.
+- Las anotaciones infinitas permanecen hasta su eliminación manual.
+- La interfaz permite operar el seguimiento del encuentro cómodamente desde un ordenador.
 
 ## Entidades principales
 
-- **Encuentro:** conjunto de participantes, ronda actual y posición del turno activo.
-- **Participante:** identificador, nombre, iniciativa, tipo opcional y estado.
+- **Encuentro:** lista ordenada de participantes y número de ronda actual.
+- **Participante:** identificador, nombre, valor numérico de iniciativa y lista de anotaciones.
+- **Anotación:** identificador, texto y duración restante en rondas o duración infinita.
 
-## Fuera de alcance inicial
+## Fuera de alcance
 
-- Gestión de hojas de personaje, inventario, hechizos o campañas.
+- Backend, cuentas de usuario, autenticación y almacenamiento en la nube.
+- Sincronización entre dispositivos o colaboración en tiempo real.
 - Cálculo automático de tiradas, modificadores o reglas de combate.
-- Sincronización en tiempo real entre varios dispositivos.
-- Cuentas, permisos, salas públicas o almacenamiento en la nube.
-- Integración con herramientas o servicios externos.
+- Gestión de hojas de personaje, campañas, inventario, puntos de golpe o hechizos, salvo que se añadan en una especificación posterior.
 
-## Supuestos y decisiones pendientes
+## Decisiones de comportamiento
 
-1. **Sistema y edición:** se asume Pathfinder, pero falta definir si es Pathfinder 1.ª edición, Pathfinder 2.ª edición u otra variante.
-2. **Plataforma:** falta decidir si el producto será una aplicación web, móvil, de escritorio o una herramienta de línea de comandos.
-3. **Persistencia:** falta decidir si los encuentros solo viven durante una sesión o se guardan para reutilizarse.
-4. **Empates:** se asume que el DJ decide o ajusta manualmente el orden de los empates; falta definir si se aplicará alguna regla del sistema elegido.
-5. **Vista de jugadores:** la consulta por parte de jugadores es deseable, pero no se presupone que haya colaboración o sincronización.
-6. **Idioma:** este documento está en español; falta confirmar los idiomas de la interfaz.
+- La lista se ordena de mayor a menor iniciativa, por lo que el número más alto actúa primero.
+- En caso de empate, se mantiene el orden de inserción.
+- El avance del turno rota la lista para mantener siempre al participante actual en la primera posición.
+- Una ronda se considera completada cuando todos los participantes han actuado y el turno vuelve al primero.
+- Las anotaciones finitas descuentan duración al completar una ronda; las infinitas no expiran automáticamente.
 
-## Preguntas para cerrar el alcance
+## Pendiente de decisión
 
-- ¿Qué edición de Pathfinder debe soportarse?
-- ¿Qué plataforma y tecnologías se quieren utilizar?
-- ¿Se deben guardar encuentros entre sesiones?
-- ¿La aplicación es solo para el DJ o también deben poder verla los jugadores?
-- ¿Se necesitan campos como puntos de golpe, condiciones o notas desde la primera versión?
-
-## Preparación para GitHub Spec Kit
-
-Este archivo sirve como especificación inicial de producto. Antes de generar tareas e implementación con Spec Kit, confirma los supuestos y respuestas pendientes. El alcance puede dividirse en especificaciones versionadas de funcionalidades cuando se elija la estructura del proyecto.
+- Si el estado del encuentro debe conservarse al cerrar o recargar el navegador. La especificación requiere funcionamiento sin backend, pero aún no define persistencia local entre sesiones.
+- Si se necesita una acción explícita para reiniciar el encuentro o volver a una ronda anterior.
