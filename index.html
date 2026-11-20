@@ -21,9 +21,7 @@
       <button id="reset-button" class="button button-danger" type="button">Reiniciar todo</button>
     </header>
 
-    <section class="controls" aria-label="Controles del encuentro">
-      <button id="next-button" class="button button-primary" type="button">Siguiente participante</button>
-
+    <section class="controls" aria-label="Añadir participante">
       <form id="participant-form" class="participant-form">
         <label>
           Nombre
@@ -46,7 +44,7 @@
     </section>
 
     <section class="hidden-section">
-      <button id="hidden-toggle" class="hidden-toggle" type="button" aria-expanded="false">
+      <button id="hidden-toggle" class="hidden-toggle" type="button" aria-expanded="false" aria-controls="hidden-list">
         <span>Participantes ocultos</span>
         <span id="hidden-count" class="count">0</span>
         <span id="hidden-chevron" aria-hidden="true">▸</span>
@@ -55,6 +53,12 @@
     </section>
   </main>
 
+  <div class="turn-dock" role="region" aria-label="Control del turno">
+    <span class="dock-round">Ronda <strong id="dock-round-number">1</strong></span>
+    <span id="current-turn-name" class="dock-current">Preparando encuentro…</span>
+    <button id="next-button" class="button button-primary" type="button">Siguiente participante <span aria-hidden="true">→</span></button>
+  </div>
+
   <dialog id="reset-dialog">
     <form method="dialog" class="dialog-card">
       <h2>¿Reiniciar el encuentro?</h2>
@@ -62,6 +66,22 @@
       <div class="dialog-actions">
         <button class="button" value="cancel">Cancelar</button>
         <button id="confirm-reset" class="button button-danger" value="confirm">Reiniciar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="edit-dialog">
+    <form id="edit-form" class="dialog-card">
+      <h2>Editar participante</h2>
+      <label>Nombre
+        <input id="edit-name" name="name" type="text" required>
+      </label>
+      <label>Iniciativa
+        <input id="edit-initiative" name="initiative" type="number" step="1" required>
+      </label>
+      <div class="dialog-actions">
+        <button id="cancel-edit" class="button" type="button">Cancelar</button>
+        <button class="button button-primary" type="submit">Guardar cambios</button>
       </div>
     </form>
   </dialog>
@@ -78,17 +98,20 @@
           <span class="current-label" hidden>ACTUAL</span>
         </div>
         <div class="annotations"></div>
-        <form class="annotation-form">
-          <input name="text" type="text" placeholder="Nueva anotación" aria-label="Texto de la anotación" required>
+        <button class="button button-small add-annotation-button" type="button" aria-expanded="false">＋ Anotación</button>
+        <form class="annotation-form" hidden>
+          <label class="annotation-text-field">Anotación
+            <input name="text" type="text" placeholder="Ej.: ralentizado" required>
+          </label>
           <label class="round-input">
-            Rondas
+            Duración (rondas)
             <input name="rounds" type="number" min="1" step="1" value="1">
           </label>
           <label class="infinite-label">
             <input name="infinite" type="checkbox">
             Infinita
           </label>
-          <button class="button button-small" type="submit">Añadir</button>
+          <button class="button button-small" type="submit">Guardar anotación</button>
         </form>
       </div>
       <div class="participant-actions">
