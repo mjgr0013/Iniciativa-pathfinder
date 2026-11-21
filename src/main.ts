@@ -29,6 +29,7 @@ const addHiddenParticipant = requiredElement<HTMLButtonElement>("#add-hidden-par
 
 const CAEDREN_TOKEN_URL = new URL("./IMG_3618.png", import.meta.url).href;
 const DEFAULT_NAMES = ["Gorr", "Lyra", "Caedren", "Kumiko", "Adriana", "Shary"];
+let pendingRemovalAnimations = 0;
 
 function sortedActive(participants: Participant[]): Participant[] {
   return participants.filter((participant) => !participant.hidden)
@@ -41,6 +42,13 @@ function isDefaultParticipant(participant: Participant): boolean {
   return DEFAULT_NAMES.some((name) => name.toLocaleLowerCase("es") === participant.name.toLocaleLowerCase("es"));
 }
 
+function makeEmptyState(message: string): HTMLElement {
+  const empty = document.createElement("p");
+  empty.className = "empty-state";
+  empty.textContent = message;
+  return empty;
+}
+
 function makeFallbackToken(name: string): string {
   let hash = 0;
   for (const character of name) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
@@ -51,21 +59,40 @@ function makeFallbackToken(name: string): string {
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
+function animateAnnotationRemoval(item: HTMLElement, onComplete?: () => void): void {
+  if (item.classList.contains("is-removing")) return;
+  const removeButton = item.querySelector<HTMLButtonElement>(".annotation-delete");
+  if (removeButton) removeButton.disabled = true;
+  item.classList.add("is-removing");
+  pendingRemovalAnimations += 1;
+  nextButton.disabled = true;
+  const duration = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 280;
+  window.setTimeout(() => {
+    pendingRemovalAnimations = Math.max(0, pendingRemovalAnimations - 1);
+    onComplete?.();
+  }, duration);
+}
+
 function makeAnnotation(annotation: Annotation, onRemove: () => void, label: string): HTMLElement {
   const item = document.createElement("span");
   item.className = "annotation";
+  item.dataset.annotationId = annotation.id;
+  if (annotation.rounds === 1) {
+    item.classList.add("is-expiring");
+    item.title = "Expira al finalizar esta ronda";
+  }
   const text = document.createElement("span");
   text.className = "annotation-text";
   text.textContent = annotation.text;
   const duration = document.createElement("span");
   duration.className = "annotation-duration";
-  duration.textContent = annotation.rounds === 0 ? "Infinita" : `${annotation.rounds} ronda${annotation.rounds === 1 ? "" : "s"}`;
+  duration.textContent = annotation.rounds === 0 ? "Infinita" : annotation.rounds === 1 ? "Última ronda" : `${annotation.rounds} rondas`;
   const remove = document.createElement("button");
   remove.type = "button";
   remove.className = "annotation-delete";
   remove.setAttribute("aria-label", `Eliminar anotación: ${label}`);
   remove.textContent = "×";
-  remove.addEventListener("click", onRemove);
+  remove.addEventListener("click", () => animateAnnotationRemoval(item, onRemove));
   item.append(text, document.createTextNode(" · "), duration, remove);
   return item;
 }
@@ -98,36 +125,22 @@ function editInline(button: HTMLButtonElement, participant: Participant, field: 
   input.addEventListener("blur", () => finish(true));
 }
 
-function renderCompanion(participant: Participant, card: HTMLElement): void {
-  if (!participant.companion) return;
-  const panel = document.createElement("div");
-  panel.className = "companion-panel";
-  const label = document.createElement("strong");
-  label.textContent = `Compañero: ${participant.companion.name}${participant.companion.hidden ? " (oculto)" : ""}`;
-  const toggle = document.createElement("button");
-  toggle.type = "button";
-  toggle.className = "button button-small companion-toggle";
-  toggle.textContent = participant.companion.hidden ? "Mostrar" : "Ocultar";
-  toggle.setAttribute("aria-label", `${participant.companion.hidden ? "Mostrar" : "Ocultar"} a ${participant.companion.name}`);
-  toggle.addEventListener("click", () => encounterStore.getState().toggleCompanion(participant.id));
-  panel.append(label, toggle);
-  requiredElement<HTMLDivElement>(".participant-info", card).append(panel);
-}
-
 function createParticipantCard(participant: Participant, isHidden: boolean): HTMLElement {
   const card = participantTemplate.content.firstElementChild!.cloneNode(true) as HTMLElement;
   card.dataset.id = participant.id;
   card.classList.toggle("is-current", !isHidden && participant.id === encounterStore.getState().currentId);
-  card.title = isHidden ? "Participante oculto" : "Haz doble clic para marcar este participante como actual";
+  card.title = isHidden ? "Participante oculto" : "Selecciona para marcar este participante como actual";
 
-  const initiativeBadge = requiredElement<HTMLDivElement>(".initiative-badge", card);
   if (isDefaultParticipant(participant)) {
-    const isCaedren = participant.name.toLocaleLowerCase("es") === "caedren";
-    const tokenUrl = isCaedren ? CAEDREN_TOKEN_URL : makeFallbackToken(participant.name);
-    initiativeBadge.style.backgroundImage = `url("${tokenUrl}")`;
-    initiativeBadge.style.backgroundSize = "cover";
-    initiativeBadge.style.backgroundPosition = "center";
-    initiativeBadge.style.borderColor = "#b8c486";
+    const token = document.createElement("img");
+    token.className = "participant-token";
+    token.src = participant.name.toLocaleLowerCase("es") === "caedren" ? CAEDREN_TOKEN_URL : makeFallbackToken(participant.name);
+    token.alt = `Token de ${participant.name}`;
+    token.width = 64;
+    token.height = 64;
+    token.loading = "lazy";
+    token.decoding = "async";
+    card.insertBefore(token, card.firstElementChild);
   }
 
   const initiativeButton = requiredElement<HTMLButtonElement>(".initiative-value", card);
@@ -140,7 +153,7 @@ function createParticipantCard(participant: Participant, isHidden: boolean): HTM
   initiativeButton.addEventListener("click", () => editInline(initiativeButton, participant, "initiative"));
   nameButton.addEventListener("click", () => editInline(nameButton, participant, "name"));
 
-  if (!isHidden) card.addEventListener("dblclick", (event) => {
+  if (!isHidden) card.addEventListener("click", (event) => {
     if (event.target instanceof Element && event.target.closest("button, input, form")) return;
     encounterStore.getState().setCurrentParticipant(participant.id);
   });
@@ -151,7 +164,6 @@ function createParticipantCard(participant: Participant, isHidden: boolean): HTM
     () => encounterStore.getState().removeAnnotation(participant.id, annotation.id),
     annotation.text,
   )));
-  renderCompanion(participant, card);
 
   const hideButton = requiredElement<HTMLButtonElement>(".hide-button", card);
   const restoreButton = requiredElement<HTMLButtonElement>(".restore-button", card);
@@ -198,19 +210,21 @@ function render(): void {
     .sort((a, b) => a.name.localeCompare(b.name, "es"));
   roundNumber.textContent = String(state.round);
   dockRoundNumber.textContent = String(state.round);
-  activeCount.textContent = `${active.length} activo${active.length === 1 ? "" : "s"}`;
+  activeCount.textContent = `${active.length} ${active.length === 1 ? "activo" : "activos"}`;
   hiddenCount.textContent = String(hidden.length);
-  nextButton.disabled = active.length === 0;
+  nextButton.disabled = active.length === 0 || pendingRemovalAnimations > 0;
   currentTurnName.textContent = active.length
     ? `Turno de ${active.find((participant) => participant.id === state.currentId)?.name ?? active[0].name}`
     : "No hay participantes activos";
-  activeList.replaceChildren(...active.map((participant) => createParticipantCard(participant, false)));
+  const activeCards = active.map((participant) => createParticipantCard(participant, false));
+  activeList.replaceChildren(...(activeCards.length ? activeCards : [makeEmptyState("Añade un participante para empezar a preparar el orden de iniciativa.")]));
   hiddenList.replaceChildren(...hidden.map((participant) => createParticipantCard(participant, true)));
-  globalAnnotationsList.replaceChildren(...state.globalAnnotations.map((annotation) => makeAnnotation(
+  const globalAnnotations = state.globalAnnotations.map((annotation) => makeAnnotation(
     annotation,
     () => encounterStore.getState().removeGlobalAnnotation(annotation.id),
     `global: ${annotation.text}`,
-  )));
+  ));
+  globalAnnotationsList.replaceChildren(...(globalAnnotations.length ? globalAnnotations : [makeEmptyState("Los efectos que añadas aquí se aplicarán a todo el encuentro.")]));
 }
 
 function addParticipantFromForm(hidden: boolean): void {
@@ -248,15 +262,41 @@ globalAnnotationForm.addEventListener("submit", (event) => {
 });
 
 nextButton.addEventListener("click", () => {
-  const before = encounterStore.getState().round;
-  encounterStore.getState().nextTurn();
-  if (encounterStore.getState().round !== before) requestAnimationFrame(() => {
-    const currentCard = activeList.querySelector<HTMLElement>(".participant-card.is-current");
-    if (!currentCard) return;
-    const rect = currentCard.getBoundingClientRect();
-    const offset = rect.top - window.innerHeight / 2 + rect.height / 2;
-    if (Math.abs(offset) > 8) window.scrollBy({ top: offset, behavior: "smooth" });
-  });
+  const state = encounterStore.getState();
+  const active = sortedActive(state.participants);
+  if (!active.length) return;
+  const currentIndex = Math.max(0, active.findIndex((participant) => participant.id === state.currentId));
+  const endOfRound = currentIndex === active.length - 1;
+  if (!endOfRound) {
+    encounterStore.getState().nextTurn();
+    return;
+  }
+  const expiringIds = new Set([
+    ...state.participants.filter((participant) => !participant.hidden)
+      .flatMap((participant) => participant.annotations.filter((annotation) => annotation.rounds === 1).map((annotation) => annotation.id)),
+    ...state.globalAnnotations.filter((annotation) => annotation.rounds === 1).map((annotation) => annotation.id),
+  ]);
+  const expiringElements = [
+    ...activeList.querySelectorAll<HTMLElement>(".annotation[data-annotation-id]"),
+    ...globalAnnotationsList.querySelectorAll<HTMLElement>(".annotation[data-annotation-id]"),
+  ].filter((item) => expiringIds.has(item.dataset.annotationId ?? ""));
+  if (!expiringElements.length) {
+    encounterStore.getState().nextTurn();
+    return;
+  }
+  const before = state.round;
+  expiringElements.forEach((item) => animateAnnotationRemoval(item));
+  const duration = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 280;
+  window.setTimeout(() => {
+    encounterStore.getState().nextTurn();
+    if (encounterStore.getState().round !== before) requestAnimationFrame(() => {
+      const currentCard = activeList.querySelector<HTMLElement>(".participant-card.is-current");
+      if (!currentCard) return;
+      const rect = currentCard.getBoundingClientRect();
+      const offset = rect.top - window.innerHeight / 2 + rect.height / 2;
+      if (Math.abs(offset) > 8) window.scrollBy({ top: offset, behavior: "smooth" });
+    });
+  }, duration);
 });
 
 resetButton.addEventListener("click", () => resetDialog.showModal());
@@ -265,12 +305,11 @@ confirmReset.addEventListener("click", (event) => {
   encounterStore.getState().resetEncounter();
   resetDialog.close();
 });
-
 hiddenToggle.addEventListener("click", () => {
   const expanded = hiddenToggle.getAttribute("aria-expanded") === "true";
   hiddenToggle.setAttribute("aria-expanded", String(!expanded));
   hiddenList.hidden = expanded;
-  hiddenChevron.textContent = expanded ? "▸" : "▾";
+  hiddenChevron.textContent = expanded ? "⌄" : "⌃";
 });
 
 encounterStore.subscribe(render);
