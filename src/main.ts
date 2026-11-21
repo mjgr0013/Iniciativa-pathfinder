@@ -138,7 +138,7 @@ function createParticipantCard(participant: Participant, isHidden: boolean): HTM
     token.alt = `Token de ${participant.name}`;
     token.width = 64;
     token.height = 64;
-    token.loading = "lazy";
+    token.loading = "eager";
     token.decoding = "async";
     card.insertBefore(token, card.firstElementChild);
   }
@@ -203,6 +203,19 @@ function createParticipantCard(participant: Participant, isHidden: boolean): HTM
   return card;
 }
 
+function updateCurrentTurn(state = encounterStore.getState()): void {
+  const active = sortedActive(state.participants);
+  currentTurnName.textContent = active.length
+    ? `Turno de ${active.find((participant) => participant.id === state.currentId)?.name ?? active[0].name}`
+    : "No hay participantes activos";
+  activeList.querySelectorAll<HTMLElement>(".participant-card").forEach((card) => {
+    const isCurrent = card.dataset.id === state.currentId;
+    card.classList.toggle("is-current", isCurrent);
+    const currentLabel = card.querySelector<HTMLElement>(".current-label");
+    if (currentLabel) currentLabel.hidden = !isCurrent;
+  });
+}
+
 function render(): void {
   const state = encounterStore.getState();
   const active = sortedActive(state.participants);
@@ -213,9 +226,6 @@ function render(): void {
   activeCount.textContent = `${active.length} ${active.length === 1 ? "activo" : "activos"}`;
   hiddenCount.textContent = String(hidden.length);
   nextButton.disabled = active.length === 0 || pendingRemovalAnimations > 0;
-  currentTurnName.textContent = active.length
-    ? `Turno de ${active.find((participant) => participant.id === state.currentId)?.name ?? active[0].name}`
-    : "No hay participantes activos";
   const activeCards = active.map((participant) => createParticipantCard(participant, false));
   activeList.replaceChildren(...(activeCards.length ? activeCards : [makeEmptyState("Añade un participante para empezar a preparar el orden de iniciativa.")]));
   hiddenList.replaceChildren(...hidden.map((participant) => createParticipantCard(participant, true)));
@@ -225,6 +235,7 @@ function render(): void {
     `global: ${annotation.text}`,
   ));
   globalAnnotationsList.replaceChildren(...(globalAnnotations.length ? globalAnnotations : [makeEmptyState("Los efectos que añadas aquí se aplicarán a todo el encuentro.")]));
+  updateCurrentTurn(state);
 }
 
 function addParticipantFromForm(hidden: boolean): void {
@@ -312,5 +323,14 @@ hiddenToggle.addEventListener("click", () => {
   hiddenChevron.textContent = expanded ? "⌄" : "⌃";
 });
 
-encounterStore.subscribe(render);
+encounterStore.subscribe((state, previousState) => {
+  const onlyTurnChanged = state.participants === previousState.participants
+    && state.globalAnnotations === previousState.globalAnnotations
+    && state.round === previousState.round;
+  if (onlyTurnChanged) {
+    updateCurrentTurn(state);
+    return;
+  }
+  render();
+});
 render();
