@@ -35,6 +35,22 @@
       </form>
     </section>
 
+    <section aria-labelledby="global-annotations-heading">
+      <div class="section-heading">
+        <h2 id="global-annotations-heading">Anotaciones globales</h2>
+      </div>
+      <div id="global-annotations" class="annotations"></div>
+      <form id="global-annotation-form" class="annotation-form">
+        <label class="annotation-text-field">Anotación global
+          <input name="text" type="text" placeholder="Ej.: efecto ambiental" required>
+        </label>
+        <label class="round-input">Duración (rondas; 0 = infinita)
+          <input name="rounds" type="number" min="0" step="1" value="1" required>
+        </label>
+        <button class="button button-small" type="submit">Añadir anotación</button>
+      </form>
+    </section>
+
     <section>
       <div class="section-heading">
         <h2>Participantes activos</h2>
@@ -62,7 +78,7 @@
   <dialog id="reset-dialog">
     <form method="dialog" class="dialog-card">
       <h2>¿Reiniciar el encuentro?</h2>
-      <p>Se borrarán los participantes añadidos y las anotaciones. Gorr, Lyra, Caedren, Kumiko y Adriana volverán con iniciativa 0.</p>
+      <p>Se borrarán los participantes añadidos y las anotaciones. Gorr, Lyra, Caedren, Kumiko, Adriana y Shary volverán con iniciativa 0.</p>
       <div class="dialog-actions">
         <button class="button" value="cancel">Cancelar</button>
         <button id="confirm-reset" class="button button-danger" value="confirm">Reiniciar</button>
