@@ -20,15 +20,16 @@ function loadState() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
-      const state = JSON.parse(saved);
-      if (Array.isArray(state.participants) && Number.isInteger(state.round)) {
-        state.participants.forEach((participant, index) => {
+      const loaded = JSON.parse(saved);
+      if (Array.isArray(loaded.participants) && Number.isInteger(loaded.round)) {
+        loaded.participants.forEach((participant, index) => {
           participant.order ??= index;
           participant.annotations ??= [];
           participant.hidden ??= false;
           participant.initiative = Number(participant.initiative) || 0;
         });
-        return state;
+        loaded.round = Math.max(1, loaded.round);
+        return loaded;
       }
     }
   } catch (error) {
@@ -71,8 +72,11 @@ function activeParticipants() {
 
 function ensureTurn() {
   const active = activeParticipants();
-  if (!active.length) state.currentId = null;
-  else if (!active.some(participant => participant.id === state.currentId)) state.currentId = active[0].id;
+  if (!active.length) {
+    state.currentId = null;
+  } else if (!active.some(participant => participant.id === state.currentId)) {
+    state.currentId = active[0].id;
+  }
 }
 
 function makeId(prefix = "participant") {
@@ -95,6 +99,7 @@ function render() {
     ? `Turno de ${active.find(participant => participant.id === state.currentId)?.name ?? active[0].name}`
     : "No hay participantes activos";
 
+  // Explicitly clear any stale hidden attribute and retain the active list display.
   activeList.hidden = false;
   activeList.replaceChildren();
   hiddenList.replaceChildren();
@@ -221,26 +226,25 @@ nextButton.addEventListener("click", () => {
   const active = activeParticipants();
   if (!active.length) return;
 
-  const currentIndex = active.findIndex(participant => participant.id === state.currentId);
-  // If saved state is stale, recover to the first participant without skipping a turn.
-  if (currentIndex < 0) {
-    state.currentId = active[0].id;
-    render();
-    return;
-  }
+  // Resolve the current position from the initiative-sorted active list every time.
+  // Wrapping from the final active participant to the first is the sole round boundary.
+  let currentIndex = active.findIndex(participant => participant.id === state.currentId);
+  if (currentIndex < 0) currentIndex = 0;
+  const isEndOfRound = currentIndex === active.length - 1;
 
-  const wrapped = currentIndex === active.length - 1;
-  if (wrapped) {
-    state.round = Math.max(1, Number(state.round) || 1) + 1;
-    for (const participant of active) {
+  if (isEndOfRound) {
+    state.round = (Number(state.round) || 1) + 1;
+    active.forEach(participant => {
       participant.annotations = participant.annotations.filter(annotation => {
         if (annotation.infinite) return true;
         annotation.rounds = Number(annotation.rounds) - 1;
         return annotation.rounds > 0;
       });
-    }
+    });
   }
-  state.currentId = active[wrapped ? 0 : currentIndex + 1].id;
+
+  const nextIndex = isEndOfRound ? 0 : currentIndex + 1;
+  state.currentId = active[nextIndex].id;
   render();
 });
 
