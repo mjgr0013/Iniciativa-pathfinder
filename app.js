@@ -83,7 +83,22 @@ function makeId(prefix = "participant") {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-function render() {
+function centerCurrentParticipant(behavior = "smooth") {
+  requestAnimationFrame(() => {
+    const currentCard = activeList.querySelector(".participant-card.is-current");
+    if (!currentCard) return;
+
+    const cardRect = currentCard.getBoundingRect ? currentCard.getBoundingRect() : currentCard.getBoundingClientRect();
+    const viewportCenter = window.innerHeight / 2;
+    const desiredOffset = cardRect.top - viewportCenter + cardRect.height / 2;
+
+    if (Math.abs(desiredOffset) > 8) {
+      window.scrollBy({ top: desiredOffset, behavior });
+    }
+  });
+}
+
+function render({ centerCurrent = false, scrollBehavior = "smooth" } = {}) {
   ensureTurn();
   const active = activeParticipants();
   const hidden = state.participants
@@ -99,19 +114,21 @@ function render() {
     ? `Turno de ${active.find(participant => participant.id === state.currentId)?.name ?? active[0].name}`
     : "No hay participantes activos";
 
-  // Explicitly clear any stale hidden attribute and retain the active list display.
   activeList.hidden = false;
   activeList.replaceChildren();
   hiddenList.replaceChildren();
   active.forEach(participant => activeList.append(createParticipantCard(participant, false)));
   hidden.forEach(participant => hiddenList.append(createParticipantCard(participant, true)));
   saveState();
+
+  if (centerCurrent) centerCurrentParticipant(scrollBehavior);
 }
 
 function createParticipantCard(participant, hidden) {
   const card = template.content.firstElementChild.cloneNode(true);
   card.dataset.id = participant.id;
   card.classList.toggle("is-current", !hidden && participant.id === state.currentId);
+  card.title = hidden ? "Participante oculto" : "Haz doble clic para marcar este participante como actual";
 
   const initiativeButton = card.querySelector(".initiative-value");
   initiativeButton.textContent = String(participant.initiative);
@@ -123,6 +140,14 @@ function createParticipantCard(participant, hidden) {
 
   initiativeButton.addEventListener("click", () => editInline(initiativeButton, participant, "initiative"));
   nameButton.addEventListener("click", () => editInline(nameButton, participant, "name"));
+
+  if (!hidden) {
+    card.addEventListener("dblclick", event => {
+      if (event.target.closest("button, input, form")) return;
+      state.currentId = participant.id;
+      render({ centerCurrent: true });
+    });
+  }
 
   const annotations = card.querySelector(".annotations");
   participant.annotations.forEach(annotation => {
@@ -204,8 +229,8 @@ function editInline(button, participant, field) {
     render();
   };
   input.addEventListener("keydown", event => {
-    if (event.key === "Enter") { event.preventDefault(); finish(true); }
-    else if (event.key === "Escape") { event.preventDefault(); finish(false); }
+    if (event.key === "Enter") { event.prevent("default"); finish(true); }
+    else if (event.key === "Escape") { event.prevent("default"); finish(false); }
   });
   input.addEventListener("blur", () => finish(true));
 }
@@ -226,8 +251,6 @@ nextButton.addEventListener("click", () => {
   const active = activeParticipants();
   if (!active.length) return;
 
-  // Resolve the current position from the initiative-sorted active list every time.
-  // Wrapping from the final active participant to the first is the sole round boundary.
   let currentIndex = active.findIndex(participant => participant.id === state.currentId);
   if (currentIndex < 0) currentIndex = 0;
   const isEndOfRound = currentIndex === active.length - 1;
@@ -245,7 +268,7 @@ nextButton.addEventListener("click", () => {
 
   const nextIndex = isEndOfRound ? 0 : currentIndex + 1;
   state.currentId = active[nextIndex].id;
-  render();
+  render({ centerCurrent: true });
 });
 
 function hideParticipant(id) {
@@ -260,7 +283,7 @@ function hideParticipant(id) {
       ?? active.slice(0, currentIndex).find(item => !item.hidden);
     state.currentId = nextVisible?.id ?? null;
   }
-  render();
+  render({ centerCurrent: true });
 }
 
 function restoreParticipant(id) {
