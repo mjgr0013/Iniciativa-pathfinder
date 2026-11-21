@@ -54,9 +54,7 @@ input { height: 42px; width: 100%; border: 1px solid var(--border); border-radiu
 .initiative-badge .inline-edit-input { width: 72px; text-align: center; font-weight: 800; }
 .participant-title-row { display: flex; align-items: center; gap: 8px; min-height: 34px; flex-wrap: wrap; }
 .participant-info { min-width: 0; }
-.current-label, .acted-label { border-radius: 999px; padding: 3px 7px; font-size: .68rem; font-weight: 800; }
-.current-label { border: 1px solid var(--current); color: #ecd48f; }
-.acted-label { border: 1px solid var(--border); color: var(--muted); }
+.current-label { border-radius: 999px; padding: 3px 7px; font-size: .68rem; font-weight: 800; border: 1px solid var(--current); color: #ecd48f; }
 .participant-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: end; }
 .annotations { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; }
 .annotation { display: inline-flex; align-items: center; gap: 7px; max-width: 100%; border: 1px solid var(--border); background: #111827; border-radius: 999px; padding: 5px 8px; font-size: .82rem; }
@@ -74,6 +72,7 @@ input { height: 42px; width: 100%; border: 1px solid var(--border); border-radiu
 .hidden-toggle { width: 100%; gap: 10px; border: 0; background: transparent; color: var(--text); padding: 8px 0; text-align: left; font-weight: 800; }
 .hidden-toggle:hover { color: var(--accent); }
 .hidden-list { margin-top: 8px; }
+.hidden-list[hidden] { display: none; }
 .hidden-list .participant-card { opacity: .72; }
 .turn-dock { position: fixed; z-index: 10; inset: auto 0 0; min-height: 82px; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 12px max(20px, calc((100vw - 1180px)/2)); background: rgba(15,21,34,.97); border-top: 1px solid var(--border); box-shadow: 0 -8px 24px rgba(0,0,0,.24); backdrop-filter: blur(12px); }
 .dock-round { color: var(--muted); white-space: nowrap; }
@@ -81,7 +80,6 @@ input { height: 42px; width: 100%; border: 1px solid var(--border); border-radiu
 .dock-current { min-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .turn-dock .button { min-height: 48px; font-size: .96rem; }
 .turn-dock #next-button { min-width: 220px; }
-.button-round:not(:disabled) { border-color: #568b70; background: #244b3b; }
 .dialog-card { width: min(440px, calc(100vw - 32px)); border: 1px solid var(--border); border-radius: 12px; padding: 22px; background: var(--surface); color: var(--text); }
 dialog { border: 0; padding: 0; background: transparent; }
 dialog::backdrop { background: rgba(5,8,14,.75); }
@@ -106,10 +104,8 @@ dialog::backdrop { background: rgba(5,8,14,.75); }
   .participant-form .button { grid-column: 1 / -1; }
   .participant-card { grid-template-columns: 56px 1fr; padding: 10px; gap: 10px; }
   .participant-actions { gap: 5px; }
-  .turn-dock { min-height: 112px; display: grid; grid-template-columns: 1fr 1fr; padding: 8px 10px; gap: 6px; }
+  .turn-dock { min-height: 72px; padding: 8px 10px; gap: 6px; }
   .dock-round { display: none; }
-  .dock-current { grid-column: 1 / -1; justify-self: center; max-width: 100%; }
-  .turn-dock .button { min-height: 42px; padding: 7px; font-size: .78rem; }
-  .turn-dock #next-button { grid-column: 1; }
-  .turn-dock #complete-round-button { grid-column: 2; }
+  .dock-current { flex: 1; max-width: 100%; }
+  .turn-dock .button { min-height: 42px; padding: 7px 10px; font-size: .85rem; }
 }

@@ -12,8 +12,7 @@ function createDefaultState() {
       annotations: [],
       order
     })),
-    currentId: null,
-    actedIds: []
+    currentId: null
   };
 }
 
@@ -28,7 +27,6 @@ function loadState() {
           participant.annotations ??= [];
           participant.hidden ??= false;
         });
-        state.actedIds = Array.isArray(state.actedIds) ? state.actedIds : [];
         return state;
       }
     }
@@ -50,7 +48,6 @@ const currentTurnName = document.querySelector("#current-turn-name");
 const activeCount = document.querySelector("#active-count");
 const hiddenCount = document.querySelector("#hidden-count");
 const nextButton = document.querySelector("#next-button");
-const completeRoundButton = document.querySelector("#complete-round-button");
 const resetButton = document.querySelector("#reset-button");
 const resetDialog = document.querySelector("#reset-dialog");
 const confirmReset = document.querySelector("#confirm-reset");
@@ -75,18 +72,9 @@ function ensureTurn() {
   const active = activeParticipants();
   if (!active.length) {
     state.currentId = null;
-    state.actedIds = [];
-    return;
+  } else if (!active.some(participant => participant.id === state.currentId)) {
+    state.currentId = active[0].id;
   }
-  if (!active.some(participant => participant.id === state.currentId)) {
-    state.currentId = active.find(participant => !state.actedIds.includes(participant.id))?.id ?? active[0].id;
-  }
-  const activeIds = new Set(active.map(participant => participant.id));
-  state.actedIds = state.actedIds.filter(id => activeIds.has(id));
-}
-
-function isRoundReady(active = activeParticipants()) {
-  return active.length > 0 && active.every(participant => state.actedIds.includes(participant.id));
 }
 
 function makeId(prefix = "participant") {
@@ -104,8 +92,7 @@ function render() {
   dockRoundNumber.textContent = state.round;
   activeCount.textContent = `${active.length} activo${active.length === 1 ? "" : "s"}`;
   hiddenCount.textContent = hidden.length;
-  nextButton.disabled = active.length === 0 || isRoundReady(active);
-  completeRoundButton.disabled = !isRoundReady(active);
+  nextButton.disabled = active.length === 0;
   currentTurnName.textContent = active.length
     ? `Turno de ${active.find(participant => participant.id === state.currentId)?.name ?? active[0].name}`
     : "No hay participantes activos";
@@ -120,9 +107,7 @@ function render() {
 function createParticipantCard(participant, hidden) {
   const card = template.content.firstElementChild.cloneNode(true);
   card.dataset.id = participant.id;
-  const acted = state.actedIds.includes(participant.id);
   card.classList.toggle("is-current", !hidden && participant.id === state.currentId);
-  card.classList.toggle("has-acted", !hidden && acted);
 
   const initiativeButton = card.querySelector(".initiative-value");
   initiativeButton.textContent = participant.initiative;
@@ -131,7 +116,8 @@ function createParticipantCard(participant, hidden) {
   nameButton.textContent = participant.name;
   nameButton.setAttribute("aria-label", `Editar nombre de ${participant.name}`);
   card.querySelector(".current-label").hidden = hidden || participant.id !== state.currentId;
-  card.querySelector(".acted-label").hidden = hidden || !acted || participant.id === state.currentId;
+  const actedLabel = card.querySelector(".acted-label");
+  if (actedLabel) actedLabel.hidden = true;
 
   initiativeButton.addEventListener("click", () => editInline(initiativeButton, participant, "initiative"));
   nameButton.addEventListener("click", () => editInline(nameButton, participant, "name"));
@@ -190,6 +176,7 @@ function createParticipantCard(participant, hidden) {
     participant.annotations.push({ id: makeId("annotation"), text, infinite, rounds: infinite ? null : rounds });
     render();
   });
+
   return card;
 }
 
@@ -212,11 +199,8 @@ function editInline(button, participant, field) {
     finished = true;
     const value = input.value.trim();
     if (save && value !== "") {
-      if (field === "name") {
-        participant.name = value;
-      } else if (Number.isFinite(Number(value))) {
-        participant.initiative = Number(value);
-      }
+      if (field === "name") participant.name = value;
+      else if (Number.isFinite(Number(value))) participant.initiative = Number(value);
     }
     render();
   };
@@ -249,35 +233,39 @@ participantForm.addEventListener("submit", event => {
 
 nextButton.addEventListener("click", () => {
   const active = activeParticipants();
-  if (!active.length || isRoundReady(active)) return;
+  if (!active.length) return;
   const currentIndex = active.findIndex(participant => participant.id === state.currentId);
-  if (currentIndex >= 0) state.actedIds.push(state.currentId);
-  const next = active.find(participant => !state.actedIds.includes(participant.id));
-  if (next) state.currentId = next.id;
-  render();
-});
 
-completeRoundButton.addEventListener("click", () => {
-  const active = activeParticipants();
-  if (!isRoundReady(active)) return;
-  state.round += 1;
-  active.forEach(participant => {
-    participant.annotations = participant.annotations.filter(annotation => {
-      if (annotation.infinite) return true;
-      annotation.rounds -= 1;
-      return annotation.rounds > 0;
+  if (currentIndex === active.length - 1) {
+    // Completing the last active participant's turn wraps to the first and starts a new round.
+    state.round += 1;
+    active.forEach(participant => {
+      participant.annotations = participant.annotations.filter(annotation => {
+        if (annotation.infinite) return true;
+        annotation.rounds -= 1;
+        return annotation.rounds > 0;
+      });
     });
-  });
-  state.actedIds = [];
-  state.currentId = active[0].id;
+    state.currentId = active[0].id;
+  } else {
+    state.currentId = active[currentIndex + 1].id;
+  }
   render();
 });
 
 function hideParticipant(id) {
   const participant = state.participants.find(item => item.id === id);
   if (!participant) return;
+  const active = activeParticipants();
+  const currentIndex = active.findIndex(item => item.id === state.currentId);
+  const isCurrent = participant.id === state.currentId;
   participant.hidden = true;
-  state.actedIds = state.actedIds.filter(actedId => actedId !== id);
+
+  if (isCurrent) {
+    const nextVisible = active.slice(currentIndex + 1).find(item => !item.hidden)
+      ?? active.slice(0, currentIndex).find(item => !item.hidden);
+    state.currentId = nextVisible?.id ?? null;
+  }
   render();
 }
 
@@ -285,15 +273,15 @@ function restoreParticipant(id) {
   const participant = state.participants.find(item => item.id === id);
   if (!participant) return;
   participant.hidden = false;
-  state.actedIds = state.actedIds.filter(actedId => actedId !== id);
   render();
 }
 
 function removeParticipant(id) {
   const participant = state.participants.find(item => item.id === id);
   if (!participant || !window.confirm(`¿Eliminar permanentemente a ${participant.name}?`)) return;
+  const wasCurrent = participant.id === state.currentId;
   state.participants = state.participants.filter(item => item.id !== id);
-  state.actedIds = state.actedIds.filter(actedId => actedId !== id);
+  if (wasCurrent) state.currentId = null;
   render();
 }
 
