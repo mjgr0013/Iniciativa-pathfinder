@@ -82,7 +82,6 @@ function makeId(prefix = "participant") {
 }
 
 function isInfiniteAnnotation(annotation) {
-  // El indicador "infinite" conserva compatibilidad con anotaciones guardadas anteriormente.
   return annotation.infinite === true || Number(annotation.rounds) === 0;
 }
 
