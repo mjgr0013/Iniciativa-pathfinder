@@ -1,5 +1,5 @@
 import { createStore } from "zustand/vanilla";
-import type { Annotation, EncounterData, Participant, PersistedEncounter } from "./types.ts";
+import type { Annotation, Companion, EncounterData, Participant, PersistedEncounter } from "./types.ts";
 
 const STORAGE_KEY = "iniciativa-pathfinder-state-v1";
 const SCHEMA_VERSION = 3;
@@ -12,6 +12,7 @@ export interface EncounterStore extends EncounterData {
   nextTurn(): void;
   hideParticipant(id: string): void;
   restoreParticipant(id: string): void;
+  toggleCompanion(id: string): void;
   removeParticipant(id: string): void;
   addAnnotation(participantId: string, text: string, rounds: number): void;
   removeAnnotation(participantId: string, annotationId: string): void;
@@ -24,6 +25,10 @@ function makeId(prefix = "participant"): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function defaultCompanion(): Companion {
+  return { id: "companion-jimmy", name: "Jimmy", hidden: false };
+}
+
 function createDefaultEncounter(): EncounterData {
   const participants = DEFAULT_NAMES.map((name, order) => ({
     id: `default-${order}-${Date.now()}`,
@@ -32,6 +37,8 @@ function createDefaultEncounter(): EncounterData {
     hidden: false,
     annotations: [],
     order,
+    isDefault: true,
+    ...(name === "Caedren" ? { companion: defaultCompanion() } : {}),
   }));
   return {
     round: 1,
@@ -61,9 +68,16 @@ function normalizeAnnotations(value: unknown): Annotation[] {
 
 function normalizeParticipant(value: unknown, index: number): Participant | null {
   if (!value || typeof value !== "object") return null;
-  const raw = value as Partial<Participant> & { annotations?: unknown };
+  const raw = value as Partial<Participant> & { annotations?: unknown; companion?: unknown };
   if (typeof raw.id !== "string" || typeof raw.name !== "string") return null;
   const initiative = Number(raw.initiative);
+  const companion = raw.companion && typeof raw.companion === "object"
+    ? raw.companion as Companion
+    : undefined;
+  const lowerName = raw.name.toLocaleLowerCase("es");
+  const isDefault = typeof raw.isDefault === "boolean"
+    ? raw.isDefault
+    : DEFAULT_NAMES.some((name) => name.toLocaleLowerCase("es") === lowerName);
   return {
     id: raw.id,
     name: raw.name,
@@ -71,6 +85,8 @@ function normalizeParticipant(value: unknown, index: number): Participant | null
     hidden: raw.hidden === true,
     annotations: normalizeAnnotations(raw.annotations),
     order: Number.isInteger(raw.order) ? raw.order! : index,
+    isDefault,
+    ...(companion !== undefined ? { companion } : {}),
   };
 }
 
@@ -107,6 +123,7 @@ function loadEncounter(): EncounterData {
               hidden: false,
               annotations: [],
               order: participants.reduce((max, participant) => Math.max(max, participant.order), -1) + 1,
+              isDefault: true,
             });
           }
 
@@ -152,7 +169,7 @@ export const encounterStore = createStore<EncounterStore>()((set, get) => ({
 
   addParticipant(name, initiative, hidden) {
     const participant: Participant = {
-      id: makeId(), name, initiative, hidden, annotations: [], order: get().participants.length,
+      id: makeId(), name, initiative, hidden, annotations: [], order: get().participants.length, isDefault: false,
     };
     set((state) => ({
       participants: [...state.participants, participant],
@@ -217,7 +234,17 @@ export const encounterStore = createStore<EncounterStore>()((set, get) => ({
     }));
   },
 
+  toggleCompanion(id) {
+    set((state) => ({
+      participants: state.participants.map((participant) => participant.id === id && participant.companion
+        ? { ...participant, companion: { ...participant.companion, hidden: !participant.companion.hidden } }
+        : participant),
+    }));
+  },
+
   removeParticipant(id) {
+    const target = get().participants.find((participant) => participant.id === id);
+    if (target?.isDefault) return;
     const participants = get().participants.filter((participant) => participant.id !== id);
     const active = sortActive(participants);
     set((state) => ({

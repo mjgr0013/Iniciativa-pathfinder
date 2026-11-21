@@ -41,18 +41,10 @@ function makeEmptyState(message: string): HTMLElement {
   return empty;
 }
 
-/** A local, generated fantasy token placeholder; replace with character artwork when supplied. */
 function makeTokenSource(name: string): string {
   let hash = 0;
   for (const character of name) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
-  const palettes = [
-    ["#486b57", "#b3c781", "#e1ba7a"],
-    ["#465a78", "#a7c3d6", "#d8a878"],
-    ["#754f4d", "#d49a77", "#e7cb8d"],
-    ["#665379", "#c2a8d7", "#e5bf83"],
-    ["#426e70", "#9ed0c1", "#edc27a"],
-    ["#786044", "#d8bc82", "#d88970"],
-  ];
+  const palettes = [["#486b57", "#b3c781", "#e1ba7a"], ["#465a78", "#a7c3d6", "#d8a878"], ["#754f4d", "#d49a77", "#e7cb8d"], ["#665379", "#c2a8d7", "#e5bf83"], ["#426e70", "#9ed0c1", "#edc27a"], ["#786044", "#d8bc82", "#d88970"]];
   const [background, accent, skin] = palettes[hash % palettes.length]!;
   const initials = name.trim().split(/\s+/).slice(0, 2).map((part) => part[0] ?? "").join("").toUpperCase();
   const variant = (hash >>> 4) % 3;
@@ -61,8 +53,22 @@ function makeTokenSource(name: string): string {
     : variant === 1
       ? `<path d="M33 39c0-15 7-23 18-23 12 0 19 9 19 24l-5 18H37z" fill="#d5d2c0"/><ellipse cx="51" cy="42" rx="12" ry="14" fill="${skin}"/><path d="M38 37c2-13 7-19 14-19 8 0 13 7 14 18-9 1-16-2-21-8-2 4-4 7-7 9z" fill="#d5d2c0"/>`
       : `<path d="M32 41c0-16 8-25 19-25s19 9 19 25l-6 14H38z" fill="#39302a"/><ellipse cx="51" cy="42" rx="12" ry="14" fill="${skin}"/><path d="M37 39c2-14 8-20 15-20 8 0 13 7 15 18-9-1-17-5-22-11-2 5-4 9-8 13z" fill="#39302a"/>`;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 102 102"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${accent}"/><stop offset="1" stop-color="${background}"/></linearGradient><radialGradient id="glow"><stop stop-color="${accent}" stop-opacity=".65"/><stop offset="1" stop-color="${accent}" stop-opacity="0"/></radialGradient></defs><rect width="102" height="102" rx="20" fill="url(#bg)"/><circle cx="77" cy="22" r="37" fill="url(#glow)"/><path d="M10 78 28 59l12 9 16-21 35 37v18H10z" fill="#1e2827" opacity=".55"/><circle cx="51" cy="49" r="34" fill="none" stroke="${accent}" stroke-opacity=".72" stroke-width="2"/><path d="M27 93c2-19 11-27 24-27s22 8 24 27" fill="#303b35" stroke="#d7c89d" stroke-width="2"/>${head}<path d="M43 44h2m13 0h2" stroke="#312c27" stroke-width="2.5" stroke-linecap="round"/><path d="M47 52q4 3 8 0" fill="none" stroke="#925e50" stroke-width="1.5" stroke-linecap="round"/><path d="M16 19h8m-4-4v8M79 72h7m-3.5-3.5v7" stroke="#f2e5b6" stroke-opacity=".7" stroke-width="1.5"/><text x="51" y="98" text-anchor="middle" fill="#fff" font-family="sans-serif" font-size="7" font-weight="700" letter-spacing="1">${initials}</text></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 102 102"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${accent}"/><stop offset="1" stop-color="${background}"/></linearGradient></defs><rect width="102" height="102" rx="20" fill="url(#bg)"/><circle cx="51" cy="49" r="34" fill="none" stroke="${accent}" stroke-opacity=".72" stroke-width="2"/><path d="M27 93c2-19 11-27 24-27s22 8 24 27" fill="#303b35" stroke="#d7c89d" stroke-width="2"/>${head}<text x="51" y="98" text-anchor="middle" fill="#fff" font-family="sans-serif" font-size="7" font-weight="700">${initials}</text></svg>`;
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+function animateAnnotationRemoval(item: HTMLElement, onComplete?: () => void): void {
+  if (item.classList.contains("is-removing")) return;
+  const removeButton = item.querySelector<HTMLButtonElement>(".annotation-delete");
+  if (removeButton) removeButton.disabled = true;
+  item.classList.add("is-removing");
+  pendingRemovalAnimations += 1;
+  nextButton.disabled = true;
+  const duration = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 280;
+  window.setTimeout(() => {
+    pendingRemovalAnimations = Math.max(0, pendingRemovalAnimations - 1);
+    onComplete?.();
+  }, duration);
 }
 
 function makeAnnotation(annotation: Annotation, onRemove: () => void, label: string): HTMLElement {
@@ -78,11 +84,7 @@ function makeAnnotation(annotation: Annotation, onRemove: () => void, label: str
   text.textContent = annotation.text;
   const duration = document.createElement("span");
   duration.className = "annotation-duration";
-  duration.textContent = annotation.rounds === 0
-    ? "Infinita"
-    : annotation.rounds === 1
-      ? "Última ronda"
-      : `${annotation.rounds} rondas`;
+  duration.textContent = annotation.rounds === 0 ? "Infinita" : annotation.rounds === 1 ? "Última ronda" : `${annotation.rounds} rondas`;
   const remove = document.createElement("button");
   remove.type = "button";
   remove.className = "annotation-delete";
@@ -91,20 +93,6 @@ function makeAnnotation(annotation: Annotation, onRemove: () => void, label: str
   remove.addEventListener("click", () => animateAnnotationRemoval(item, onRemove));
   item.append(text, document.createTextNode(" · "), duration, remove);
   return item;
-}
-
-function animateAnnotationRemoval(item: HTMLElement, onComplete?: () => void): void {
-  if (item.classList.contains("is-removing")) return;
-  const removeButton = item.querySelector<HTMLButtonElement>(".annotation-delete");
-  if (removeButton) removeButton.disabled = true;
-  item.classList.add("is-removing");
-  pendingRemovalAnimations += 1;
-  nextButton.disabled = true;
-  const duration = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 280;
-  window.setTimeout(() => {
-    pendingRemovalAnimations = Math.max(0, pendingRemovalAnimations - 1);
-    onComplete?.();
-  }, duration);
 }
 
 function editInline(button: HTMLButtonElement, participant: Participant, field: "name" | "initiative"): void {
@@ -141,15 +129,17 @@ function createParticipantCard(participant: Participant, isHidden: boolean): HTM
   card.classList.toggle("is-current", !isHidden && participant.id === encounterStore.getState().currentId);
   card.title = isHidden ? "Participante oculto" : "Selecciona para marcar este participante como actual";
 
-  const token = document.createElement("img");
-  token.className = "participant-token";
-  token.src = makeTokenSource(participant.name);
-  token.alt = `Token de ${participant.name}`;
-  token.width = 64;
-  token.height = 64;
-  token.loading = "lazy";
-  token.decoding = "async";
-  card.insertBefore(token, card.firstElementChild);
+  if (participant.isDefault) {
+    const token = document.createElement("img");
+    token.className = "participant-token";
+    token.src = makeTokenSource(participant.name);
+    token.alt = `Token de ${participant.name}`;
+    token.width = 64;
+    token.height = 64;
+    token.loading = "lazy";
+    token.decoding = "async";
+    card.insertBefore(token, card.firstElementChild);
+  }
 
   const initiativeButton = requiredElement<HTMLButtonElement>(".initiative-value", card);
   initiativeButton.textContent = String(participant.initiative);
@@ -179,7 +169,11 @@ function createParticipantCard(participant: Participant, isHidden: boolean): HTM
   restoreButton.hidden = !isHidden;
   hideButton.addEventListener("click", () => encounterStore.getState().hideParticipant(participant.id));
   restoreButton.addEventListener("click", () => encounterStore.getState().restoreParticipant(participant.id));
-  requiredElement<HTMLButtonElement>(".remove-button", card).addEventListener("click", () => {
+
+  const removeButton = requiredElement<HTMLButtonElement>(".remove-button", card);
+  removeButton.hidden = participant.isDefault;
+  removeButton.addEventListener("click", () => {
+    if (participant.isDefault) return;
     if (window.confirm(`¿Eliminar permanentemente a ${participant.name}?`)) encounterStore.getState().removeParticipant(participant.id);
   });
 
