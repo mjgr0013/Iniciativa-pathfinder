@@ -1,20 +1,39 @@
 # Iniciativa Pathfinder
 
-Aplicación web estática para gestionar iniciativa, rondas y anotaciones temporales o infinitas en encuentros de Pathfinder.
+Aplicación web para gestionar iniciativa, rondas y anotaciones temporales o infinitas en encuentros de Pathfinder. Está implementada en TypeScript con un store de Zustand y se ejecuta en el navegador; el encuentro continúa guardándose en `localStorage`.
 
-## Uso
+## Requisitos
 
-1. Abre `index.html` en un navegador moderno.
-2. Añade participantes y asigna su iniciativa.
-3. Pulsa **Siguiente participante** para avanzar el turno.
-4. Usa las anotaciones para registrar efectos temporales o permanentes.
-5. Oculta participantes muertos o retirados sin eliminarlos.
-6. Usa **Reiniciar todo** para restaurar Gorr, Lyra, Caedren, Kumiko y Adriana.
+- Node.js 20.19+ o 22.12+
 
-Los participantes predeterminados empiezan con iniciativa `0`. Los datos se guardan automáticamente en `localStorage` del navegador.
+## Desarrollo y compilación
 
-## Archivos
+```sh
+npm install
+npm run dev
+```
 
-- `index.html`: estructura de la interfaz.
-- `styles.css`: presentación responsive optimizada para PC.
-- `app.js`: estado, turnos, rondas, anotaciones y persistencia local.
+Para validar los tipos y generar la versión estática de producción:
+
+```sh
+npm run build
+npm run preview
+```
+
+El contenido compilado se genera en `dist/`. La configuración usa rutas relativas para poder publicar también en GitHub Pages.
+
+## Comportamiento
+
+- Los participantes predeterminados son Gorr, Lyra, Caedren, Kumiko y Adriana.
+- Los turnos respetan iniciativa descendente y orden de inserción en caso de empate.
+- Las anotaciones con duración `0` son infinitas; las de duración positiva descuentan una ronda al terminar la vuelta.
+- Se pueden añadir, editar, ocultar, restaurar y eliminar participantes, así como gestionar anotaciones.
+- La acción de reinicio solicita confirmación y restaura el encuentro predeterminado.
+- El estado existente guardado en `localStorage` se mantiene compatible, incluidas las anotaciones creadas con el antiguo checkbox de duración infinita.
+
+## Estructura
+
+- `src/types.ts`: modelos TypeScript.
+- `src/store.ts`: estado y acciones de encuentro en Zustand, con persistencia compatible en `localStorage`.
+- `src/main.ts`: interfaz del navegador y conexión con el store.
+- `index.html` y `styles.css`: estructura y estilos.
