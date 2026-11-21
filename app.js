@@ -81,6 +81,11 @@ function makeId(prefix = "participant") {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function isInfiniteAnnotation(annotation) {
+  // El indicador "infinite" conserva compatibilidad con anotaciones guardadas anteriormente.
+  return annotation.infinite === true || Number(annotation.rounds) === 0;
+}
+
 function centerCurrentParticipant(behavior = "smooth") {
   requestAnimationFrame(() => {
     const currentCard = activeList.querySelector(".participant-card.is-current");
@@ -151,7 +156,7 @@ function createParticipantCard(participant, hidden) {
     text.textContent = annotation.text;
     const duration = document.createElement("span");
     duration.className = "annotation-duration";
-    duration.textContent = annotation.infinite ? "Infinita" : `${annotation.rounds} ronda${annotation.rounds === 1 ? "" : "s"}`;
+    duration.textContent = isInfiniteAnnotation(annotation) ? "Infinita" : `${annotation.rounds} ronda${annotation.rounds === 1 ? "" : "s"}`;
     const remove = document.createElement("button");
     remove.type = "button";
     remove.className = "annotation-delete";
@@ -173,25 +178,23 @@ function createParticipantCard(participant, hidden) {
   const addAnnotationButton = card.querySelector(".add-annotation-button");
   const annotationForm = card.querySelector(".annotation-form");
   const roundsInput = annotationForm.elements.rounds;
-  const infiniteInput = annotationForm.elements.infinite;
   addAnnotationButton.hidden = hidden;
   addAnnotationButton.addEventListener("click", () => {
     annotationForm.hidden = !annotationForm.hidden;
     addAnnotationButton.setAttribute("aria-expanded", String(!annotationForm.hidden));
     if (!annotationForm.hidden) annotationForm.elements.text.focus();
   });
-  infiniteInput.addEventListener("change", () => { roundsInput.disabled = infiniteInput.checked; });
   annotationForm.addEventListener("submit", event => {
     event.preventDefault();
     const text = annotationForm.elements.text.value.trim();
-    const infinite = infiniteInput.checked;
-    const rounds = Number(roundsInput.value);
+    const roundsValue = roundsInput.value.trim();
+    const rounds = Number(roundsValue);
     if (!text) return;
-    if (!infinite && (!Number.isInteger(rounds) || rounds < 1)) {
-      alert("Indica un número entero de rondas de al menos 1.");
+    if (roundsValue === "" || !Number.isInteger(rounds) || rounds < 0) {
+      alert("Indica un número entero de rondas igual o mayor que 0. Usa 0 para una duración infinita.");
       return;
     }
-    participant.annotations.push({ id: makeId("annotation"), text, infinite, rounds: infinite ? null : rounds });
+    participant.annotations.push({ id: makeId("annotation"), text, rounds });
     render();
   });
   return card;
@@ -267,7 +270,7 @@ nextButton.addEventListener("click", () => {
     state.round = (Number(state.round) || 1) + 1;
     active.forEach(participant => {
       participant.annotations = participant.annotations.filter(annotation => {
-        if (annotation.infinite) return true;
+        if (isInfiniteAnnotation(annotation)) return true;
         annotation.rounds = Number(annotation.rounds) - 1;
         return annotation.rounds > 0;
       });
