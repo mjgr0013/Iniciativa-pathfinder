@@ -27,6 +27,8 @@ const hiddenToggle = requiredElement<HTMLButtonElement>("#hidden-toggle");
 const hiddenChevron = requiredElement<HTMLElement>("#hidden-chevron");
 const addHiddenParticipant = requiredElement<HTMLButtonElement>("#add-hidden-participant");
 
+let pendingRemovalAnimations = 0;
+
 function sortedActive(participants: Participant[]): Participant[] {
   return participants.filter((participant) => !participant.hidden)
     .sort((a, b) => b.initiative - a.initiative || a.order - b.order);
@@ -39,9 +41,28 @@ function makeEmptyState(message: string): HTMLElement {
   return empty;
 }
 
+function animateAnnotationRemoval(item: HTMLElement, onComplete?: () => void): void {
+  if (item.classList.contains("is-removing")) return;
+  const removeButton = item.querySelector<HTMLButtonElement>(".annotation-delete");
+  if (removeButton) removeButton.disabled = true;
+  item.classList.add("is-removing");
+  pendingRemovalAnimations += 1;
+  nextButton.disabled = true;
+  const duration = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 280;
+  window.setTimeout(() => {
+    pendingRemovalAnimations = Math.max(0, pendingRemovalAnimations - 1);
+    onComplete?.();
+  }, duration);
+}
+
 function makeAnnotation(annotation: Annotation, onRemove: () => void, label: string): HTMLElement {
   const item = document.createElement("span");
   item.className = "annotation";
+  item.dataset.annotationId = annotation.id;
+  if (annotation.rounds === 1) {
+    item.classList.add("is-expiring");
+    item.title = "Expira al finalizar esta ronda";
+  }
   const text = document.createElement("span");
   text.className = "annotation-text";
   text.textContent = annotation.text;
@@ -49,13 +70,15 @@ function makeAnnotation(annotation: Annotation, onRemove: () => void, label: str
   duration.className = "annotation-duration";
   duration.textContent = annotation.rounds === 0
     ? "Infinita"
-    : `${annotation.rounds} ronda${annotation.rounds === 1 ? "" : "s"}`;
+    : annotation.rounds === 1
+      ? "Última ronda"
+      : `${annotation.rounds} rondas`;
   const remove = document.createElement("button");
   remove.type = "button";
   remove.className = "annotation-delete";
   remove.setAttribute("aria-label", `Eliminar anotación: ${label}`);
   remove.textContent = "×";
-  remove.addEventListener("click", onRemove);
+  remove.addEventListener("click", () => animateAnnotationRemoval(item, onRemove));
   item.append(text, document.createTextNode(" · "), duration, remove);
   return item;
 }
@@ -160,7 +183,7 @@ function render(): void {
   dockRoundNumber.textContent = String(state.round);
   activeCount.textContent = `${active.length} ${active.length === 1 ? "activo" : "activos"}`;
   hiddenCount.textContent = String(hidden.length);
-  nextButton.disabled = active.length === 0;
+  nextButton.disabled = active.length === 0 || pendingRemovalAnimations > 0;
   currentTurnName.textContent = active.length
     ? `Turno de ${active.find((participant) => participant.id === state.currentId)?.name ?? active[0].name}`
     : "No hay participantes activos";
@@ -210,15 +233,45 @@ globalAnnotationForm.addEventListener("submit", (event) => {
 });
 
 nextButton.addEventListener("click", () => {
-  const before = encounterStore.getState().round;
-  encounterStore.getState().nextTurn();
-  if (encounterStore.getState().round !== before) requestAnimationFrame(() => {
-    const currentCard = activeList.querySelector<HTMLElement>(".participant-card.is-current");
-    if (!currentCard) return;
-    const rect = currentCard.getBoundingClientRect();
-    const offset = rect.top - window.innerHeight / 2 + rect.height / 2;
-    if (Math.abs(offset) > 8) window.scrollBy({ top: offset, behavior: "smooth" });
-  });
+  const state = encounterStore.getState();
+  const active = sortedActive(state.participants);
+  if (!active.length) return;
+  const foundIndex = active.findIndex((participant) => participant.id === state.currentId);
+  const currentIndex = Math.max(0, foundIndex);
+  const endOfRound = currentIndex === active.length - 1;
+  if (!endOfRound) {
+    encounterStore.getState().nextTurn();
+    return;
+  }
+
+  const expiringIds = new Set([
+    ...state.participants.filter((participant) => !participant.hidden)
+      .flatMap((participant) => participant.annotations.filter((annotation) => annotation.rounds === 1).map((annotation) => annotation.id)),
+    ...state.globalAnnotations.filter((annotation) => annotation.rounds === 1).map((annotation) => annotation.id),
+  ]);
+  const expiringElements = [
+    ...activeList.querySelectorAll<HTMLElement>(".annotation[data-annotation-id]"),
+    ...globalAnnotationsList.querySelectorAll<HTMLElement>(".annotation[data-annotation-id]"),
+  ].filter((item) => expiringIds.has(item.dataset.annotationId ?? ""));
+
+  if (!expiringElements.length) {
+    encounterStore.getState().nextTurn();
+    return;
+  }
+
+  const before = state.round;
+  expiringElements.forEach((item) => animateAnnotationRemoval(item));
+  const duration = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 280;
+  window.setTimeout(() => {
+    encounterStore.getState().nextTurn();
+    if (encounterStore.getState().round !== before) requestAnimationFrame(() => {
+      const currentCard = activeList.querySelector<HTMLElement>(".participant-card.is-current");
+      if (!currentCard) return;
+      const rect = currentCard.getBoundingClientRect();
+      const offset = rect.top - window.innerHeight / 2 + rect.height / 2;
+      if (Math.abs(offset) > 8) window.scrollBy({ top: offset, behavior: "smooth" });
+    });
+  }, duration);
 });
 
 resetButton.addEventListener("click", () => resetDialog.showModal());
