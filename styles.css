@@ -30,19 +30,20 @@ h1 { margin-bottom: 0; font-size: 1.5rem; }
 .button:focus-visible, input:focus-visible { outline: 3px solid rgba(121,167,255,.35); outline-offset: 2px; }
 .button-primary { background: var(--accent-strong); border-color: var(--accent); }
 .button-danger { color: #fff0f1; border-color: #7f4149; }
-.button-small { min-height: 34px; padding: 5px 9px; font-size: .82rem; }
+.button-small { min-height: 34px; height: 34px; padding: 5px 9px; font-size: .82rem; }
 .controls { gap: 16px; margin: 16px 0 24px; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; }
 .participant-form { display: flex; align-items: end; gap: 10px; flex: 1; }
 .participant-form label, .annotation-form label { display: grid; gap: 5px; color: var(--muted); font-size: .82rem; }
 .participant-form label:first-child { flex: 1; }
+.add-participant-actions { display: flex; align-items: center; gap: 8px; }
+.add-participant-actions .button { height: 42px; }
 input { height: 42px; width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; background: #101726; color: var(--text); }
 .section-heading { justify-content: space-between; margin-bottom: 10px; }
 .section-heading h2 { margin: 0; font-size: 1.05rem; }
 .count { color: var(--muted); font-weight: 700; }
 .participant-list { display: grid; gap: 10px; }
 #active-list { display: grid !important; }
-#active-list[hidden] { display: none !important; }
-#hidden-list[hidden] { display: none !important; }
+#active-list[hidden], #hidden-list[hidden], .annotation-form[hidden] { display: none !important; }
 .participant-card { display: grid; grid-template-columns: 74px minmax(220px,1fr) auto; gap: 14px; align-items: start; padding: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; transition: background .15s, border-color .15s; }
 .participant-card.is-current { border: 2px solid var(--current); background: #262b35; box-shadow: 0 0 0 2px rgba(201,164,88,.12); }
 .initiative-badge { min-height: 62px; display: grid; place-items: center; align-content: center; border-radius: 10px; background: var(--surface-high); border: 1px solid var(--border); }
@@ -56,19 +57,18 @@ input { height: 42px; width: 100%; border: 1px solid var(--border); border-radiu
 .participant-title-row { display: flex; align-items: center; gap: 8px; min-height: 34px; flex-wrap: wrap; }
 .participant-info { min-width: 0; }
 .current-label { border-radius: 999px; padding: 3px 7px; font-size: .68rem; font-weight: 800; border: 1px solid var(--current); color: #ecd48f; }
-.participant-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: end; }
+.participant-actions { display: grid; grid-auto-flow: column; grid-auto-columns: max-content; align-items: center; height: 34px; gap: 6px; }
+.participant-actions .button { margin: 0; }
 .annotations { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; }
 .annotation { display: inline-flex; align-items: center; gap: 7px; max-width: 100%; border: 1px solid var(--border); background: #111827; border-radius: 999px; padding: 5px 8px; font-size: .82rem; }
 .annotation-text { overflow-wrap: anywhere; }
 .annotation-delete { border: 0; background: transparent; color: var(--muted); padding: 0 2px; }
 .annotation-form { display: flex; align-items: end; gap: 8px; margin-top: 10px; }
-.annotation-form[hidden] { display: none !important; }
 .annotation-form .annotation-text-field { flex: 1; min-width: 180px; }
 .round-input { min-width: 120px; }
 .round-input input { width: 110px; }
 .infinite-label { height: 42px; display: flex !important; grid-auto-flow: column; align-items: center; white-space: nowrap; }
 .infinite-label input { width: 16px; height: 16px; }
-.add-annotation-button { margin-top: 8px; }
 .hidden-section { margin-top: 18px; border-top: 1px solid var(--border); padding-top: 12px; }
 .hidden-toggle { width: 100%; gap: 10px; border: 0; background: transparent; color: var(--text); padding: 8px 0; text-align: left; font-weight: 800; }
 .hidden-toggle:hover { color: var(--accent); }
@@ -88,7 +88,7 @@ dialog::backdrop { background: rgba(5,8,14,.75); }
 .dialog-actions { display: flex; justify-content: end; gap: 8px; margin-top: 18px; }
 @media (max-width: 900px) {
   .participant-card { grid-template-columns: 64px 1fr; }
-  .participant-actions { grid-column: 1 / -1; justify-content: start; }
+  .participant-actions { grid-column: 1 / -1; justify-content: start; height: 34px; }
   .annotation-form { flex-wrap: wrap; }
   .annotation-form .annotation-text-field { flex-basis: 100%; }
   .turn-dock { justify-content: space-between; gap: 8px; }
@@ -101,7 +101,8 @@ dialog::backdrop { background: rgba(5,8,14,.75); }
   .topbar h1 { font-size: 1.15rem; }
   .topbar > .button { width: 100%; }
   .participant-form { display: grid; grid-template-columns: 1fr 90px; }
-  .participant-form .button { grid-column: 1 / -1; }
+  .add-participant-actions { grid-column: 1 / -1; }
+  .add-participant-actions .button { flex: 1; }
   .participant-card { grid-template-columns: 56px 1fr; padding: 10px; gap: 10px; }
   .participant-actions { gap: 5px; }
   .turn-dock { min-height: 72px; padding: 8px 10px; gap: 6px; }

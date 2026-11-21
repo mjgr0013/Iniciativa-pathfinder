@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#172033">
   <title>Iniciativa Pathfinder</title>
-  <link rel="stylesheet" href="styles.css?v=6">
+  <link rel="stylesheet" href="styles.css?v=7">
 </head>
 <body>
   <main class="app-shell">
@@ -29,7 +29,10 @@
         <label>Iniciativa
           <input id="participant-init" name="initiative" type="number" step="1" value="0" required>
         </label>
-        <button class="button" type="submit">Añadir participante</button>
+        <div class="add-participant-actions">
+          <button class="button" type="submit">Añadir activo</button>
+          <button id="add-hidden-participant" class="button" type="button">Añadir oculto</button>
+        </div>
       </form>
     </section>
 
@@ -80,7 +83,6 @@
           <span class="current-label" hidden>ACTUAL</span>
         </div>
         <div class="annotations"></div>
-        <button class="button button-small add-annotation-button" type="button" aria-expanded="false">＋ Anotación</button>
         <form class="annotation-form" hidden>
           <label class="annotation-text-field">Anotación
             <input name="text" type="text" placeholder="Ej.: ralentizado" required>
@@ -93,6 +95,7 @@
         </form>
       </div>
       <div class="participant-actions">
+        <button class="button button-small add-annotation-button" type="button" aria-expanded="false">＋ Anotación</button>
         <button class="button button-small hide-button" type="button">Ocultar</button>
         <button class="button button-small restore-button" type="button" hidden>Mostrar</button>
         <button class="button button-small remove-button" type="button">Eliminar</button>
@@ -100,6 +103,6 @@
     </article>
   </template>
 
-  <script src="app.js?v=6"></script>
+  <script src="app.js?v=7"></script>
 </body>
 </html>

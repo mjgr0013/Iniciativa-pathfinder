@@ -55,6 +55,7 @@ const resetDialog = document.querySelector("#reset-dialog");
 const confirmReset = document.querySelector("#confirm-reset");
 const hiddenToggle = document.querySelector("#hidden-toggle");
 const hiddenChevron = document.querySelector("#hidden-chevron");
+const addHiddenParticipant = document.querySelector("#add-hidden-participant");
 
 function saveState() {
   try {
@@ -72,11 +73,8 @@ function activeParticipants() {
 
 function ensureTurn() {
   const active = activeParticipants();
-  if (!active.length) {
-    state.currentId = null;
-  } else if (!active.some(participant => participant.id === state.currentId)) {
-    state.currentId = active[0].id;
-  }
+  if (!active.length) state.currentId = null;
+  else if (!active.some(participant => participant.id === state.currentId)) state.currentId = active[0].id;
 }
 
 function makeId(prefix = "participant") {
@@ -87,18 +85,13 @@ function centerCurrentParticipant(behavior = "smooth") {
   requestAnimationFrame(() => {
     const currentCard = activeList.querySelector(".participant-card.is-current");
     if (!currentCard) return;
-
-    const cardRect = currentCard.getBoundingRect ? currentCard.getBoundingRect() : currentCard.getBoundingClientRect();
-    const viewportCenter = window.innerHeight / 2;
-    const desiredOffset = cardRect.top - viewportCenter + cardRect.height / 2;
-
-    if (Math.abs(desiredOffset) > 8) {
-      window.scrollBy({ top: desiredOffset, behavior });
-    }
+    const cardRect = currentCard.getBoundingClientRect();
+    const desiredOffset = cardRect.top - window.innerHeight / 2 + cardRect.height / 2;
+    if (Math.abs(desiredOffset) > 8) window.scrollBy({ top: desiredOffset, behavior });
   });
 }
 
-function render({ centerCurrent = false, scrollBehavior = "smooth" } = {}) {
+function render({ centerCurrent = false } = {}) {
   ensureTurn();
   const active = activeParticipants();
   const hidden = state.participants
@@ -121,7 +114,7 @@ function render({ centerCurrent = false, scrollBehavior = "smooth" } = {}) {
   hidden.forEach(participant => hiddenList.append(createParticipantCard(participant, true)));
   saveState();
 
-  if (centerCurrent) centerCurrentParticipant(scrollBehavior);
+  if (centerCurrent) centerCurrentParticipant();
 }
 
 function createParticipantCard(participant, hidden) {
@@ -182,7 +175,6 @@ function createParticipantCard(participant, hidden) {
   const roundsInput = annotationForm.elements.rounds;
   const infiniteInput = annotationForm.elements.infinite;
   addAnnotationButton.hidden = hidden;
-  annotationForm.hidden = true;
   addAnnotationButton.addEventListener("click", () => {
     annotationForm.hidden = !annotationForm.hidden;
     addAnnotationButton.setAttribute("aria-expanded", String(!annotationForm.hidden));
@@ -229,22 +221,38 @@ function editInline(button, participant, field) {
     render();
   };
   input.addEventListener("keydown", event => {
-    if (event.key === "Enter") { event.prevent("default"); finish(true); }
-    else if (event.key === "Escape") { event.prevent("default"); finish(false); }
+    if (event.key === "Enter") { event.preventDefault(); finish(true); }
+    else if (event.key === "Escape") { event.preventDefault(); finish(false); }
   });
   input.addEventListener("blur", () => finish(true));
 }
 
-participantForm.addEventListener("submit", event => {
-  event.preventDefault();
+function addParticipant(hidden) {
   const name = participantForm.elements.name.value.trim();
   const initiative = Number(participantForm.elements.initiative.value);
   if (!name) return alert("El nombre es obligatorio.");
   if (!Number.isFinite(initiative)) return alert("La iniciativa debe ser un número.");
-  state.participants.push({ id: makeId(), name, initiative, hidden: false, annotations: [], order: state.participants.length });
+
+  state.participants.push({
+    id: makeId(),
+    name,
+    initiative,
+    hidden,
+    annotations: [],
+    order: state.participants.length
+  });
   participantForm.reset();
   participantForm.elements.initiative.value = 0;
   render();
+}
+
+participantForm.addEventListener("submit", event => {
+  event.preventDefault();
+  addParticipant(false);
+});
+
+addHiddenParticipant.addEventListener("click", () => {
+  addParticipant(true);
 });
 
 nextButton.addEventListener("click", () => {
