@@ -59,7 +59,7 @@ function normalizeAnnotations(value: unknown): Annotation[] {
   });
 }
 
-function normalizeParticipant(value: unknown, index: number, migrateLegacy: boolean): Participant | null {
+function normalizeParticipant(value: unknown, index: number): Participant | null {
   if (!value || typeof value !== "object") return null;
   const raw = value as Partial<Participant> & { annotations?: unknown };
   if (typeof raw.id !== "string" || typeof raw.name !== "string") return null;
@@ -96,7 +96,7 @@ function loadEncounter(): EncounterData {
         if (Array.isArray(raw.participants)) {
           const migrateLegacy = Number(raw.schemaVersion ?? 0) < SCHEMA_VERSION;
           const participants = raw.participants
-            .map((participant, index) => normalizeParticipant(participant, index, migrateLegacy))
+            .map((participant, index) => normalizeParticipant(participant, index))
             .filter((participant): participant is Participant => participant !== null);
 
           if (migrateLegacy && !participants.some((participant) => participant.name.toLocaleLowerCase("es") === "shary")) {

@@ -3,85 +3,120 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#172033">
+  <meta name="theme-color" content="#101510">
+  <meta name="description" content="Rastreador de iniciativa y efectos para encuentros de Pathfinder.">
   <title>Iniciativa Pathfinder</title>
 </head>
 <body>
-  <main class="app-shell">
+  <div class="app-shell">
     <header class="topbar">
-      <div>
-        <p class="eyebrow">Encuentro</p>
-        <h1>Rastreador de iniciativa</h1>
+      <a class="brand" href="./" aria-label="Iniciativa Pathfinder, inicio">
+        <span class="brand-mark" aria-hidden="true">PF</span>
+        <span class="brand-copy">
+          <span class="eyebrow">Herramienta de encuentro</span>
+          <span class="brand-title">Iniciativa <span>Pathfinder</span></span>
+        </span>
+      </a>
+      <div class="topbar-actions">
+        <div class="round-panel" aria-live="polite" aria-label="Ronda actual">
+          <span class="round-caption">RONDA</span>
+          <strong id="round-number">1</strong>
+        </div>
+        <button id="reset-button" class="button button-quiet button-danger" type="button">
+          <span aria-hidden="true">↻</span> Reiniciar
+        </button>
       </div>
-      <div class="round-panel" aria-live="polite">
-        <span>Ronda</span>
-        <strong id="round-number">1</strong>
-      </div>
-      <button id="reset-button" class="button button-danger" type="button">Reiniciar todo</button>
     </header>
 
-    <section class="controls" aria-label="Añadir participante">
-      <form id="participant-form" class="participant-form">
-        <label>Nombre
-          <input id="participant-name" name="name" type="text" autocomplete="off" required>
-        </label>
-        <label>Iniciativa
-          <input id="participant-init" name="initiative" type="number" step="1" value="0" required>
-        </label>
-        <div class="add-participant-actions">
-          <button class="button" type="submit">Añadir activo</button>
-          <button id="add-hidden-participant" class="button" type="button">Añadir oculto</button>
-        </div>
-      </form>
-    </section>
+    <main class="dashboard-grid">
+      <aside class="sidebar" aria-label="Preparación y efectos del encuentro">
+        <section class="panel setup-panel" aria-labelledby="setup-heading">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Preparación</p>
+              <h2 id="setup-heading">Añadir participante</h2>
+            </div>
+            <span class="heading-icon" aria-hidden="true">＋</span>
+          </div>
+          <form id="participant-form" class="participant-form">
+            <label>Nombre
+              <input id="participant-name" name="name" type="text" autocomplete="off" placeholder="Ej.: Explorador" required>
+            </label>
+            <label>Iniciativa
+              <input id="participant-init" name="initiative" type="number" step="1" value="0" required>
+            </label>
+            <div class="add-participant-actions">
+              <button class="button button-primary" type="submit">Añadir activo <span aria-hidden="true">→</span></button>
+              <button id="add-hidden-participant" class="button button-secondary" type="button">Añadir oculto</button>
+            </div>
+          </form>
+        </section>
 
-    <section aria-labelledby="global-annotations-heading">
-      <div class="section-heading">
-        <h2 id="global-annotations-heading">Anotaciones globales</h2>
+        <section class="panel global-panel" aria-labelledby="global-annotations-heading">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Efectos del encuentro</p>
+              <h2 id="global-annotations-heading">Anotaciones globales</h2>
+            </div>
+            <span class="heading-icon heading-icon-muted" aria-hidden="true">✳</span>
+          </div>
+          <div id="global-annotations" class="annotations" aria-live="polite"></div>
+          <form id="global-annotation-form" class="annotation-form global-annotation-form">
+            <label class="annotation-text-field">Anotación
+              <input name="text" type="text" placeholder="Ej.: niebla densa" required>
+            </label>
+            <label class="round-input">Duración en rondas <span class="label-hint">0 = infinita</span>
+              <input name="rounds" type="number" min="0" step="1" value="1" required>
+            </label>
+            <button class="button button-secondary button-full" type="submit">＋ Añadir anotación</button>
+          </form>
+        </section>
+      </aside>
+
+      <div class="encounter-column">
+        <section class="initiative-section" aria-labelledby="active-heading">
+          <div class="section-heading initiative-heading">
+            <div>
+              <p class="section-kicker">Orden de actuación</p>
+              <h1 id="active-heading">Participantes activos</h1>
+            </div>
+            <span id="active-count" class="count"></span>
+          </div>
+          <p class="section-description">Ordenados por iniciativa. Selecciona una tarjeta para cambiar el turno actual.</p>
+          <div id="active-list" class="participant-list" aria-live="polite"></div>
+        </section>
+
+        <section class="hidden-section" aria-label="Participantes apartados">
+          <button id="hidden-toggle" class="hidden-toggle" type="button" aria-expanded="false" aria-controls="hidden-list">
+            <span class="hidden-heading-icon" aria-hidden="true">◌</span>
+            <span class="hidden-heading-copy"><strong>Participantes ocultos</strong><small>Fuera del orden de iniciativa</small></span>
+            <span id="hidden-count" class="count">0</span>
+            <span id="hidden-chevron" class="chevron" aria-hidden="true">⌄</span>
+          </button>
+          <div id="hidden-list" class="participant-list hidden-list" hidden></div>
+        </section>
       </div>
-      <div id="global-annotations" class="annotations"></div>
-      <form id="global-annotation-form" class="annotation-form">
-        <label class="annotation-text-field">Anotación global
-          <input name="text" type="text" placeholder="Ej.: efecto ambiental" required>
-        </label>
-        <label class="round-input">Duración (rondas; 0 = infinita)
-          <input name="rounds" type="number" min="0" step="1" value="1" required>
-        </label>
-        <button class="button button-small" type="submit">Añadir anotación</button>
-      </form>
-    </section>
-
-    <section>
-      <div class="section-heading">
-        <h2>Participantes activos</h2>
-        <span id="active-count" class="count"></span>
-      </div>
-      <div id="active-list" class="participant-list"></div>
-    </section>
-
-    <section class="hidden-section">
-      <button id="hidden-toggle" class="hidden-toggle" type="button" aria-expanded="false" aria-controls="hidden-list">
-        <span>Participantes ocultos</span>
-        <span id="hidden-count" class="count">0</span>
-        <span id="hidden-chevron" aria-hidden="true">▸</span>
-      </button>
-      <div id="hidden-list" class="participant-list hidden-list" hidden></div>
-    </section>
-  </main>
+    </main>
+  </div>
 
   <div class="turn-dock" role="region" aria-label="Control del turno">
-    <span class="dock-round">Ronda <strong id="dock-round-number">1</strong></span>
-    <span id="current-turn-name" class="dock-current" aria-live="polite">Preparando encuentro…</span>
-    <button id="next-button" class="button button-primary" type="button">Siguiente participante <span aria-hidden="true">→</span></button>
+    <div class="dock-status">
+      <span class="dock-indicator" aria-hidden="true"></span>
+      <span class="dock-round">Ronda <strong id="dock-round-number">1</strong></span>
+      <span class="dock-divider" aria-hidden="true"></span>
+      <span id="current-turn-name" class="dock-current" aria-live="polite">Preparando encuentro…</span>
+    </div>
+    <button id="next-button" class="button button-primary dock-next" type="button">Siguiente turno <span aria-hidden="true">→</span></button>
   </div>
 
   <dialog id="reset-dialog">
     <form method="dialog" class="dialog-card">
+      <span class="dialog-mark" aria-hidden="true">↻</span>
       <h2>¿Reiniciar el encuentro?</h2>
       <p>Se borrarán los participantes añadidos y las anotaciones. Gorr, Lyra, Caedren, Kumiko, Adriana y Shary volverán con iniciativa 0.</p>
       <div class="dialog-actions">
-        <button class="button" value="cancel">Cancelar</button>
-        <button id="confirm-reset" class="button button-danger" value="confirm">Reiniciar</button>
+        <button class="button button-secondary" value="cancel">Cancelar</button>
+        <button id="confirm-reset" class="button button-danger" value="confirm">Reiniciar encuentro</button>
       </div>
     </form>
   </dialog>
@@ -95,24 +130,24 @@
       <div class="participant-info">
         <div class="participant-title-row">
           <button class="participant-name inline-edit-trigger" type="button" aria-label="Editar nombre"></button>
-          <span class="current-label" hidden>ACTUAL</span>
+          <span class="current-label" hidden>TURNO ACTUAL</span>
         </div>
         <div class="annotations"></div>
-        <form class="annotation-form" hidden>
+        <form class="annotation-form participant-annotation-form" hidden>
           <label class="annotation-text-field">Anotación
             <input name="text" type="text" placeholder="Ej.: ralentizado" required>
           </label>
-          <label class="round-input">Duración (rondas; 0 = infinita)
+          <label class="round-input">Duración en rondas <span class="label-hint">0 = infinita</span>
             <input name="rounds" type="number" min="0" step="1" value="1" required>
           </label>
-          <button class="button button-small" type="submit">Guardar anotación</button>
+          <button class="button button-secondary button-small" type="submit">Guardar</button>
         </form>
       </div>
       <div class="participant-actions">
-        <button class="button button-small add-annotation-button" type="button" aria-expanded="false">＋ Anotación</button>
+        <button class="button button-small add-annotation-button" type="button" aria-expanded="false">＋ Efecto</button>
         <button class="button button-small hide-button" type="button">Ocultar</button>
-        <button class="button button-small restore-button" type="button" hidden>Mostrar</button>
-        <button class="button button-small remove-button" type="button">Eliminar</button>
+        <button class="button button-small restore-button" type="button" hidden>Restaurar</button>
+        <button class="button button-small remove-button" type="button" aria-label="Eliminar participante">Eliminar</button>
       </div>
     </article>
   </template>

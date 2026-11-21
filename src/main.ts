@@ -32,6 +32,13 @@ function sortedActive(participants: Participant[]): Participant[] {
     .sort((a, b) => b.initiative - a.initiative || a.order - b.order);
 }
 
+function makeEmptyState(message: string): HTMLElement {
+  const empty = document.createElement("p");
+  empty.className = "empty-state";
+  empty.textContent = message;
+  return empty;
+}
+
 function makeAnnotation(annotation: Annotation, onRemove: () => void, label: string): HTMLElement {
   const item = document.createElement("span");
   item.className = "annotation";
@@ -85,7 +92,7 @@ function createParticipantCard(participant: Participant, isHidden: boolean): HTM
   const card = participantTemplate.content.firstElementChild!.cloneNode(true) as HTMLElement;
   card.dataset.id = participant.id;
   card.classList.toggle("is-current", !isHidden && participant.id === encounterStore.getState().currentId);
-  card.title = isHidden ? "Participante oculto" : "Haz doble clic para marcar este participante como actual";
+  card.title = isHidden ? "Participante oculto" : "Selecciona para marcar este participante como actual";
 
   const initiativeButton = requiredElement<HTMLButtonElement>(".initiative-value", card);
   initiativeButton.textContent = String(participant.initiative);
@@ -97,7 +104,7 @@ function createParticipantCard(participant: Participant, isHidden: boolean): HTM
   initiativeButton.addEventListener("click", () => editInline(initiativeButton, participant, "initiative"));
   nameButton.addEventListener("click", () => editInline(nameButton, participant, "name"));
 
-  if (!isHidden) card.addEventListener("dblclick", (event) => {
+  if (!isHidden) card.addEventListener("click", (event) => {
     if (event.target instanceof Element && event.target.closest("button, input, form")) return;
     encounterStore.getState().setCurrentParticipant(participant.id);
   });
@@ -129,9 +136,10 @@ function createParticipantCard(participant: Participant, isHidden: boolean): HTM
   });
   annotationForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    const text = requiredElement<HTMLInputElement>('[name="text"]', annotationForm).value.trim();
-    const input = requiredElement<HTMLInputElement>('[name="rounds"]', annotationForm);
-    const rawRounds = input.value.trim();
+    const textInput = requiredElement<HTMLInputElement>('[name="text"]', annotationForm);
+    const roundsInput = requiredElement<HTMLInputElement>('[name="rounds"]', annotationForm);
+    const text = textInput.value.trim();
+    const rawRounds = roundsInput.value.trim();
     const rounds = Number(rawRounds);
     if (!text) return;
     if (rawRounds === "" || !Number.isInteger(rounds) || rounds < 0) {
@@ -150,19 +158,21 @@ function render(): void {
     .sort((a, b) => a.name.localeCompare(b.name, "es"));
   roundNumber.textContent = String(state.round);
   dockRoundNumber.textContent = String(state.round);
-  activeCount.textContent = `${active.length} activo${active.length === 1 ? "" : "s"}`;
+  activeCount.textContent = `${active.length} ${active.length === 1 ? "activo" : "activos"}`;
   hiddenCount.textContent = String(hidden.length);
   nextButton.disabled = active.length === 0;
   currentTurnName.textContent = active.length
     ? `Turno de ${active.find((participant) => participant.id === state.currentId)?.name ?? active[0].name}`
     : "No hay participantes activos";
-  activeList.replaceChildren(...active.map((participant) => createParticipantCard(participant, false)));
+  const activeCards = active.map((participant) => createParticipantCard(participant, false));
+  activeList.replaceChildren(...(activeCards.length ? activeCards : [makeEmptyState("Añade un participante para empezar a preparar el orden de iniciativa.")]));
   hiddenList.replaceChildren(...hidden.map((participant) => createParticipantCard(participant, true)));
-  globalAnnotationsList.replaceChildren(...state.globalAnnotations.map((annotation) => makeAnnotation(
+  const globalAnnotations = state.globalAnnotations.map((annotation) => makeAnnotation(
     annotation,
     () => encounterStore.getState().removeGlobalAnnotation(annotation.id),
     `global: ${annotation.text}`,
-  )));
+  ));
+  globalAnnotationsList.replaceChildren(...(globalAnnotations.length ? globalAnnotations : [makeEmptyState("Los efectos que añadas aquí se aplicarán a todo el encuentro.")]));
 }
 
 function addParticipantFromForm(hidden: boolean): void {
@@ -221,7 +231,7 @@ hiddenToggle.addEventListener("click", () => {
   const expanded = hiddenToggle.getAttribute("aria-expanded") === "true";
   hiddenToggle.setAttribute("aria-expanded", String(!expanded));
   hiddenList.hidden = expanded;
-  hiddenChevron.textContent = expanded ? "▸" : "▾";
+  hiddenChevron.textContent = expanded ? "⌄" : "⌃";
 });
 
 encounterStore.subscribe(render);
