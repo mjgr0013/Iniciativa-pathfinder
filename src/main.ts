@@ -44,12 +44,7 @@ function isDefaultParticipant(participant: Participant): boolean {
 function makeFallbackToken(name: string): string {
   let hash = 0;
   for (const character of name) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
-  const palettes = [
-    ["#486b57", "#b3c781"],
-    ["#465a78", "#a7c3d6"],
-    ["#754f4d", "#d49a77"],
-    ["#665379", "#c2a8d7"],
-  ];
+  const palettes = [["#486b57", "#b3c781"], ["#465a78", "#a7c3d6"], ["#754f4d", "#d49a77"], ["#665379", "#c2a8d7"]];
   const [background, accent] = palettes[hash % palettes.length]!;
   const initials = name.trim().split(/\s+/).slice(0, 2).map((part) => part[0] ?? "").join("").toUpperCase();
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 102 102"><rect width="102" height="102" rx="20" fill="${background}"/><circle cx="51" cy="49" r="34" fill="none" stroke="${accent}" stroke-width="3"/><circle cx="51" cy="43" r="17" fill="${accent}" opacity=".25"/><text x="51" y="57" text-anchor="middle" fill="#fff" font-family="sans-serif" font-size="28" font-weight="700">${initials}</text></svg>`;
@@ -64,9 +59,7 @@ function makeAnnotation(annotation: Annotation, onRemove: () => void, label: str
   text.textContent = annotation.text;
   const duration = document.createElement("span");
   duration.className = "annotation-duration";
-  duration.textContent = annotation.rounds === 0
-    ? "Infinita"
-    : `${annotation.rounds} ronda${annotation.rounds === 1 ? "" : "s"}`;
+  duration.textContent = annotation.rounds === 0 ? "Infinita" : `${annotation.rounds} ronda${annotation.rounds === 1 ? "" : "s"}`;
   const remove = document.createElement("button");
   remove.type = "button";
   remove.className = "annotation-delete";
@@ -232,7 +225,7 @@ function addParticipantFromForm(hidden: boolean): void {
 }
 
 participantForm.addEventListener("submit", (event) => {
-  event.preventEvent();
+  event.preventDefault();
   addParticipantFromForm(false);
 });
 addHiddenParticipant.addEventListener("click", () => addParticipantFromForm(true));
