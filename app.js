@@ -12,7 +12,8 @@ function createDefaultState() {
       annotations: [],
       order
     })),
-    currentId: null
+    currentId: null,
+    actedIds: []
   };
 }
 
@@ -27,6 +28,7 @@ function loadState() {
           participant.annotations ??= [];
           participant.hidden ??= false;
         });
+        state.actedIds = Array.isArray(state.actedIds) ? state.actedIds : [];
         return state;
       }
     }
@@ -37,7 +39,6 @@ function loadState() {
 }
 
 let state = loadState();
-let participantBeingEdited = null;
 
 const activeList = document.querySelector("#active-list");
 const hiddenList = document.querySelector("#hidden-list");
@@ -49,15 +50,12 @@ const currentTurnName = document.querySelector("#current-turn-name");
 const activeCount = document.querySelector("#active-count");
 const hiddenCount = document.querySelector("#hidden-count");
 const nextButton = document.querySelector("#next-button");
+const completeRoundButton = document.querySelector("#complete-round-button");
 const resetButton = document.querySelector("#reset-button");
 const resetDialog = document.querySelector("#reset-dialog");
 const confirmReset = document.querySelector("#confirm-reset");
 const hiddenToggle = document.querySelector("#hidden-toggle");
 const hiddenChevron = document.querySelector("#hidden-chevron");
-const editDialog = document.querySelector("#edit-dialog");
-const editForm = document.querySelector("#edit-form");
-const editName = document.querySelector("#edit-name");
-const editInitiative = document.querySelector("#edit-initiative");
 
 function saveState() {
   try {
@@ -67,27 +65,28 @@ function saveState() {
   }
 }
 
-function initiativeOrder() {
+function activeParticipants() {
   return state.participants
     .filter(participant => !participant.hidden)
     .sort((a, b) => b.initiative - a.initiative || a.order - b.order);
 }
 
-// Keep the initiative order cyclic: the current participant is always displayed first.
-function activeParticipants() {
-  const ordered = initiativeOrder();
-  const currentIndex = ordered.findIndex(participant => participant.id === state.currentId);
-  if (currentIndex <= 0) return ordered;
-  return ordered.slice(currentIndex).concat(ordered.slice(0, currentIndex));
+function ensureTurn() {
+  const active = activeParticipants();
+  if (!active.length) {
+    state.currentId = null;
+    state.actedIds = [];
+    return;
+  }
+  if (!active.some(participant => participant.id === state.currentId)) {
+    state.currentId = active.find(participant => !state.actedIds.includes(participant.id))?.id ?? active[0].id;
+  }
+  const activeIds = new Set(active.map(participant => participant.id));
+  state.actedIds = state.actedIds.filter(id => activeIds.has(id));
 }
 
-function ensureTurnOrder() {
-  const ordered = initiativeOrder();
-  if (!ordered.length) {
-    state.currentId = null;
-  } else if (!ordered.some(participant => participant.id === state.currentId)) {
-    state.currentId = ordered[0].id;
-  }
+function isRoundReady(active = activeParticipants()) {
+  return active.length > 0 && active.every(participant => state.actedIds.includes(participant.id));
 }
 
 function makeId(prefix = "participant") {
@@ -95,19 +94,21 @@ function makeId(prefix = "participant") {
 }
 
 function render() {
-  ensureTurnOrder();
-  roundNumber.textContent = state.round;
-  dockRoundNumber.textContent = state.round;
-
+  ensureTurn();
   const active = activeParticipants();
   const hidden = state.participants
     .filter(participant => participant.hidden)
     .sort((a, b) => a.name.localeCompare(b.name, "es"));
 
+  roundNumber.textContent = state.round;
+  dockRoundNumber.textContent = state.round;
   activeCount.textContent = `${active.length} activo${active.length === 1 ? "" : "s"}`;
   hiddenCount.textContent = hidden.length;
-  nextButton.disabled = active.length === 0;
-  currentTurnName.textContent = active.length ? `Turno de ${active[0].name}` : "No hay participantes activos";
+  nextButton.disabled = active.length === 0 || isRoundReady(active);
+  completeRoundButton.disabled = !isRoundReady(active);
+  currentTurnName.textContent = active.length
+    ? `Turno de ${active.find(participant => participant.id === state.currentId)?.name ?? active[0].name}`
+    : "No hay participantes activos";
 
   activeList.replaceChildren();
   hiddenList.replaceChildren();
@@ -119,10 +120,21 @@ function render() {
 function createParticipantCard(participant, hidden) {
   const card = template.content.firstElementChild.cloneNode(true);
   card.dataset.id = participant.id;
+  const acted = state.actedIds.includes(participant.id);
   card.classList.toggle("is-current", !hidden && participant.id === state.currentId);
-  card.querySelector(".initiative-badge strong").textContent = participant.initiative;
-  card.querySelector(".participant-name").textContent = participant.name;
+  card.classList.toggle("has-acted", !hidden && acted);
+
+  const initiativeButton = card.querySelector(".initiative-value");
+  initiativeButton.textContent = participant.initiative;
+  initiativeButton.setAttribute("aria-label", `Editar iniciativa de ${participant.name}, actual ${participant.initiative}`);
+  const nameButton = card.querySelector(".participant-name");
+  nameButton.textContent = participant.name;
+  nameButton.setAttribute("aria-label", `Editar nombre de ${participant.name}`);
   card.querySelector(".current-label").hidden = hidden || participant.id !== state.currentId;
+  card.querySelector(".acted-label").hidden = hidden || !acted || participant.id === state.currentId;
+
+  initiativeButton.addEventListener("click", () => editInline(initiativeButton, participant, "initiative"));
+  nameButton.addEventListener("click", () => editInline(nameButton, participant, "name"));
 
   const annotations = card.querySelector(".annotations");
   participant.annotations.forEach(annotation => {
@@ -151,14 +163,12 @@ function createParticipantCard(participant, hidden) {
   hideButton.addEventListener("click", () => hideParticipant(participant.id));
   restoreButton.addEventListener("click", () => restoreParticipant(participant.id));
   card.querySelector(".remove-button").addEventListener("click", () => removeParticipant(participant.id));
-  card.querySelector(".edit-button").addEventListener("click", () => openEditDialog(participant));
 
   const addAnnotationButton = card.querySelector(".add-annotation-button");
   const annotationForm = card.querySelector(".annotation-form");
   const roundsInput = annotationForm.elements.rounds;
   const infiniteInput = annotationForm.elements.infinite;
   addAnnotationButton.hidden = hidden;
-  annotationForm.hidden = true;
   addAnnotationButton.addEventListener("click", () => {
     annotationForm.hidden = !annotationForm.hidden;
     addAnnotationButton.setAttribute("aria-expanded", String(!annotationForm.hidden));
@@ -167,7 +177,6 @@ function createParticipantCard(participant, hidden) {
   infiniteInput.addEventListener("change", () => {
     roundsInput.disabled = infiniteInput.checked;
   });
-
   annotationForm.addEventListener("submit", event => {
     event.preventDefault();
     const text = annotationForm.elements.text.value.trim();
@@ -181,8 +190,46 @@ function createParticipantCard(participant, hidden) {
     participant.annotations.push({ id: makeId("annotation"), text, infinite, rounds: infinite ? null : rounds });
     render();
   });
-
   return card;
+}
+
+function editInline(button, participant, field) {
+  if (button.querySelector("input")) return;
+  const input = document.createElement("input");
+  input.className = "inline-edit-input";
+  input.value = String(participant[field]);
+  input.type = field === "initiative" ? "number" : "text";
+  if (field === "initiative") input.step = "1";
+  input.setAttribute("aria-label", field === "initiative" ? `Nueva iniciativa para ${participant.name}` : "Nuevo nombre");
+  button.replaceChildren(input);
+  button.classList.add("is-editing");
+  input.focus();
+  input.select();
+
+  let finished = false;
+  const finish = save => {
+    if (finished) return;
+    finished = true;
+    const value = input.value.trim();
+    if (save && value !== "") {
+      if (field === "name") {
+        participant.name = value;
+      } else if (Number.isFinite(Number(value))) {
+        participant.initiative = Number(value);
+      }
+    }
+    render();
+  };
+  input.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      finish(true);
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      finish(false);
+    }
+  });
+  input.addEventListener("blur", () => finish(true));
 }
 
 participantForm.addEventListener("submit", event => {
@@ -202,21 +249,27 @@ participantForm.addEventListener("submit", event => {
 
 nextButton.addEventListener("click", () => {
   const active = activeParticipants();
-  if (!active.length) return;
-  const isLast = active.length === 1 || active[active.length - 1].id === state.currentId;
-  if (isLast) {
-    state.round += 1;
-    active.forEach(participant => {
-      participant.annotations = participant.annotations.filter(annotation => {
-        if (annotation.infinite) return true;
-        annotation.rounds -= 1;
-        return annotation.rounds > 0;
-      });
+  if (!active.length || isRoundReady(active)) return;
+  const currentIndex = active.findIndex(participant => participant.id === state.currentId);
+  if (currentIndex >= 0) state.actedIds.push(state.currentId);
+  const next = active.find(participant => !state.actedIds.includes(participant.id));
+  if (next) state.currentId = next.id;
+  render();
+});
+
+completeRoundButton.addEventListener("click", () => {
+  const active = activeParticipants();
+  if (!isRoundReady(active)) return;
+  state.round += 1;
+  active.forEach(participant => {
+    participant.annotations = participant.annotations.filter(annotation => {
+      if (annotation.infinite) return true;
+      annotation.rounds -= 1;
+      return annotation.rounds > 0;
     });
-    state.currentId = active[0].id;
-  } else {
-    state.currentId = active[1].id;
-  }
+  });
+  state.actedIds = [];
+  state.currentId = active[0].id;
   render();
 });
 
@@ -224,6 +277,7 @@ function hideParticipant(id) {
   const participant = state.participants.find(item => item.id === id);
   if (!participant) return;
   participant.hidden = true;
+  state.actedIds = state.actedIds.filter(actedId => actedId !== id);
   render();
 }
 
@@ -231,6 +285,7 @@ function restoreParticipant(id) {
   const participant = state.participants.find(item => item.id === id);
   if (!participant) return;
   participant.hidden = false;
+  state.actedIds = state.actedIds.filter(actedId => actedId !== id);
   render();
 }
 
@@ -238,36 +293,9 @@ function removeParticipant(id) {
   const participant = state.participants.find(item => item.id === id);
   if (!participant || !window.confirm(`¿Eliminar permanentemente a ${participant.name}?`)) return;
   state.participants = state.participants.filter(item => item.id !== id);
+  state.actedIds = state.actedIds.filter(actedId => actedId !== id);
   render();
 }
-
-function openEditDialog(participant) {
-  participantBeingEdited = participant.id;
-  editName.value = participant.name;
-  editInitiative.value = participant.initiative;
-  editDialog.showModal();
-  editName.focus();
-}
-
-editForm.addEventListener("submit", event => {
-  event.preventDefault();
-  const participant = state.participants.find(item => item.id === participantBeingEdited);
-  if (!participant) return editDialog.close();
-  const name = editName.value.trim();
-  const initiative = Number(editInitiative.value);
-  if (!name) return alert("El nombre no puede estar vacío.");
-  if (!Number.isFinite(initiative)) return alert("La iniciativa debe ser un número válido.");
-  participant.name = name;
-  participant.initiative = initiative;
-  participantBeingEdited = null;
-  editDialog.close();
-  render();
-});
-
-document.querySelector("#cancel-edit").addEventListener("click", () => {
-  participantBeingEdited = null;
-  editDialog.close();
-});
 
 function removeAnnotation(participantId, annotationId) {
   const participant = state.participants.find(item => item.id === participantId);
