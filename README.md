@@ -5,11 +5,10 @@ Aplicación web TypeScript para gestionar iniciativa, rondas y anotaciones tempo
 ## Comportamiento
 
 - Incluye por defecto a Gorr, Lyra, Caedren, Kumiko, Adriana y Shary.
-- Jimmy está asociado a Caedren y comparte su turno de iniciativa; no ocupa un turno separado. Puede ocultarse y mostrarse desde la tarjeta de Caedren.
 - Los turnos respetan iniciativa descendente y orden de inserción en caso de empate.
 - Las anotaciones de personajes y globales duran las rondas indicadas; `0` significa que no expiran.
 - Las anotaciones globales descuentan rondas al completarse cada vuelta, igual que las de participantes activos.
-- Los datos previos se migran conservando estado y anotaciones, añadiendo Shary y Jimmy a los encuentros antiguos.
+- Los datos previos se migran conservando el estado y las anotaciones.
 
 ## Desarrollo y compilación
 

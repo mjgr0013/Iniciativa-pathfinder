@@ -81,22 +81,6 @@ function editInline(button: HTMLButtonElement, participant: Participant, field: 
   input.addEventListener("blur", () => finish(true));
 }
 
-function renderCompanion(participant: Participant, card: HTMLElement): void {
-  if (!participant.companion) return;
-  const panel = document.createElement("div");
-  panel.className = "companion-panel";
-  const label = document.createElement("strong");
-  label.textContent = `Compañero: ${participant.companion.name}${participant.companion.hidden ? " (oculto)" : ""}`;
-  const toggle = document.createElement("button");
-  toggle.type = "button";
-  toggle.className = "button button-small companion-toggle";
-  toggle.textContent = participant.companion.hidden ? "Mostrar" : "Ocultar";
-  toggle.setAttribute("aria-label", `${participant.companion.hidden ? "Mostrar" : "Ocultar"} a ${participant.companion.name}`);
-  toggle.addEventListener("click", () => encounterStore.getState().toggleCompanion(participant.id));
-  panel.append(label, toggle);
-  requiredElement<HTMLDivElement>(".participant-info", card).append(panel);
-}
-
 function createParticipantCard(participant: Participant, isHidden: boolean): HTMLElement {
   const card = participantTemplate.content.firstElementChild!.cloneNode(true) as HTMLElement;
   card.dataset.id = participant.id;
@@ -124,7 +108,6 @@ function createParticipantCard(participant: Participant, isHidden: boolean): HTM
     () => encounterStore.getState().removeAnnotation(participant.id, annotation.id),
     annotation.text,
   )));
-  renderCompanion(participant, card);
 
   const hideButton = requiredElement<HTMLButtonElement>(".hide-button", card);
   const restoreButton = requiredElement<HTMLButtonElement>(".restore-button", card);

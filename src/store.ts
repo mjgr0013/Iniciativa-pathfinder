@@ -1,8 +1,8 @@
 import { createStore } from "zustand/vanilla";
-import type { Annotation, Companion, EncounterData, Participant, PersistedEncounter } from "./types.ts";
+import type { Annotation, EncounterData, Participant, PersistedEncounter } from "./types.ts";
 
 const STORAGE_KEY = "iniciativa-pathfinder-state-v1";
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 const DEFAULT_NAMES = ["Gorr", "Lyra", "Caedren", "Kumiko", "Adriana", "Shary"];
 
 export interface EncounterStore extends EncounterData {
@@ -12,7 +12,6 @@ export interface EncounterStore extends EncounterData {
   nextTurn(): void;
   hideParticipant(id: string): void;
   restoreParticipant(id: string): void;
-  toggleCompanion(id: string): void;
   removeParticipant(id: string): void;
   addAnnotation(participantId: string, text: string, rounds: number): void;
   removeAnnotation(participantId: string, annotationId: string): void;
@@ -25,10 +24,6 @@ function makeId(prefix = "participant"): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-function defaultCompanion(): Companion {
-  return { id: "companion-jimmy", name: "Jimmy", hidden: false };
-}
-
 function createDefaultEncounter(): EncounterData {
   const participants = DEFAULT_NAMES.map((name, order) => ({
     id: `default-${order}-${Date.now()}`,
@@ -37,7 +32,6 @@ function createDefaultEncounter(): EncounterData {
     hidden: false,
     annotations: [],
     order,
-    ...(name === "Caedren" ? { companion: defaultCompanion() } : {}),
   }));
   return {
     round: 1,
@@ -70,19 +64,6 @@ function normalizeParticipant(value: unknown, index: number, migrateLegacy: bool
   const raw = value as Partial<Participant> & { annotations?: unknown };
   if (typeof raw.id !== "string" || typeof raw.name !== "string") return null;
   const initiative = Number(raw.initiative);
-  let companion: Companion | null | undefined;
-  if (raw.companion && typeof raw.companion === "object") {
-    const savedCompanion = raw.companion as Partial<Companion>;
-    companion = {
-      id: typeof savedCompanion.id === "string" ? savedCompanion.id : "companion-jimmy",
-      name: typeof savedCompanion.name === "string" ? savedCompanion.name : "Jimmy",
-      hidden: savedCompanion.hidden === true,
-    };
-  } else if (migrateLegacy && raw.name.toLocaleLowerCase("es") === "caedren") {
-    companion = defaultCompanion();
-  } else {
-    companion = raw.companion === null ? null : undefined;
-  }
   return {
     id: raw.id,
     name: raw.name,
@@ -90,7 +71,6 @@ function normalizeParticipant(value: unknown, index: number, migrateLegacy: bool
     hidden: raw.hidden === true,
     annotations: normalizeAnnotations(raw.annotations),
     order: Number.isInteger(raw.order) ? raw.order! : index,
-    ...(companion !== undefined ? { companion } : {}),
   };
 }
 
@@ -119,7 +99,6 @@ function loadEncounter(): EncounterData {
             .map((participant, index) => normalizeParticipant(participant, index, migrateLegacy))
             .filter((participant): participant is Participant => participant !== null);
 
-          // Add Shary to encounters saved before this update, but do not re-add her after a user removes her.
           if (migrateLegacy && !participants.some((participant) => participant.name.toLocaleLowerCase("es") === "shary")) {
             participants.push({
               id: `default-shary-${Date.now()}`,
@@ -235,14 +214,6 @@ export const encounterStore = createStore<EncounterStore>()((set, get) => ({
         participant.id === id ? { ...participant, hidden: false } : participant,
       ),
       currentId: state.currentId ?? id,
-    }));
-  },
-
-  toggleCompanion(id) {
-    set((state) => ({
-      participants: state.participants.map((participant) => participant.id === id && participant.companion
-        ? { ...participant, companion: { ...participant.companion, hidden: !participant.companion.hidden } }
-        : participant),
     }));
   },
 

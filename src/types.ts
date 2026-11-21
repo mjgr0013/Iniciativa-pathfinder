@@ -5,12 +5,6 @@ export interface Annotation {
   rounds: number;
 }
 
-export interface Companion {
-  id: string;
-  name: string;
-  hidden: boolean;
-}
-
 export interface Participant {
   id: string;
   name: string;
@@ -18,8 +12,6 @@ export interface Participant {
   hidden: boolean;
   annotations: Annotation[];
   order: number;
-  /** A companion shares this participant's turn and is never a separate initiative entry. */
-  companion?: Companion | null;
 }
 
 export interface EncounterData {

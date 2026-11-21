@@ -1,18 +1,18 @@
 # Especificación: Iniciativa Pathfinder
 
-> **Estado:** especificación inicial para GitHub Spec Kit  
-> **Idioma de la interfaz:** español  
+> **Estado:** especificación inicial para GitHub Spec Kit
+> **Idioma de la interfaz:** español
 > **Plataforma:** aplicación web de frontend; toda la lógica se implementará en JavaScript, sin backend.
 
 ## Resumen
 
-Aplicación web para que un director de juego gestione el orden de iniciativa durante un encuentro de Pathfinder. Permite añadir participantes con un valor numérico de iniciativa, verlos ordenados, avanzar al participante actual con un botón, llevar el contador de rondas, gestionar anotaciones temporales o permanentes y ocultar participantes que hayan muerto sin eliminarlos del encuentro.
+Aplicación web para que un director de juego gestione el orden de iniciativa durante un encuentro de Pathfinder. Permite añadir participantes con un valor numérico de iniciativa, verlos ordenados por iniciativa, avanzar turnos y gestionar anotaciones temporales o permanentes.
 
-Los participantes Gorr, Lyra, Caedren, Kumiko y Adriana estarán disponibles siempre como participantes predeterminados del encuentro.
+Los participantes Gorr, Lyra, Caedren, Kumiko, Adriana y Shary estarán disponibles siempre como participantes predeterminados del encuentro.
 
 ## Problema
 
-Durante un encuentro, el director de juego necesita consultar rápidamente quién actúa ahora, quién sigue, en qué ronda está el combate y qué anotaciones siguen vigentes para cada participante. La aplicación debe facilitar ese seguimiento desde un ordenador, con una interfaz clara y acciones principales accesibles.
+Durante un encuentro, el director de juego necesita consultar rápidamente quién actúa ahora, quién sigue, en qué ronda está el combate y qué anotaciones siguen vigentes para cada participante.
 
 ## Usuario principal
 
@@ -27,16 +27,17 @@ Al iniciar un encuentro nuevo o reiniciar el encuentro actual, la aplicación de
 3. Caedren
 4. Kumiko
 5. Adriana
+6. Shary
 
 **Escenarios de aceptación:**
 
-- Los cinco participantes aparecen como activos al iniciar o reiniciar, a menos que exista una decisión posterior de persistencia que indique lo contrario.
+- Los seis participantes aparecen como activos al iniciar o reiniciar, a menos que exista una decisión posterior de persistencia que indique lo contrario.
 - Al iniciar sin datos, los participantes deben tener la iniciativa establecida en 0 hasta que el director introduzca otra.
 - El usuario puede cambiar la iniciativa de cualquier participante predeterminado.
 - El usuario puede ocultar cualquier participante predeterminado sin eliminarlo permanentemente.
 - El usuario puede restaurar cualquier participante predeterminado oculto.
 - El usuario puede eliminar permanentemente un participante predeterminado si la interfaz permite esa acción.
-- El reinicio elimina los participantes adicionales y restablece Gorr, Lyra, Caedren, Kumiko y Adriana.
+- El reinicio elimina los participantes adicionales y restablece Gorr, Lyra, Caedren, Kumiko, Adriana y Shary.
 
 ## Historias de usuario y escenarios
 
@@ -51,7 +52,7 @@ Como director/a de juego, quiero añadir participantes con su nombre y su númer
 - La lista se ordena automáticamente de mayor a menor iniciativa; el valor más alto actúa primero.
 - Si hay empate, se conserva el orden en que se añadieron los participantes empatados.
 - La aplicación informa de forma clara si falta el nombre o la iniciativa no es válida.
-- Los participantes Gorr, Lyra, Caedren, Kumiko y Adriana ya existen y pueden editarse sin tener que volver a añadirse.
+- Los participantes predeterminados ya existen y pueden editarse sin tener que volver a añadirse.
 
 ### US2 — Avanzar al siguiente participante
 
@@ -111,7 +112,7 @@ Como director/a de juego, quiero reiniciar el encuentro para empezar de nuevo si
 
 - Hay un botón claramente identificado para reiniciar todo.
 - Antes de reiniciar, la aplicación pide confirmación para evitar una pérdida accidental.
-- Al confirmar, se eliminan los participantes adicionales y sus anotaciones, se restablecen Gorr, Lyra, Caedren, Kumiko y Adriana como participantes activos con iniciativa 0 y sin anotaciones, y el contador vuelve a la ronda 1.
+- Al confirmar, se eliminan los participantes adicionales y sus anotaciones, se restablecen Gorr, Lyra, Caedren, Kumiko, Adriana y Shary como participantes activos con iniciativa 0 y sin anotaciones.
 - Si se cancela la confirmación, el encuentro permanece sin cambios.
 
 ## Requisitos funcionales
@@ -129,7 +130,7 @@ Como director/a de juego, quiero reiniciar el encuentro para empezar de nuevo si
 - **FR-011:** La aplicación debe permitir ocultar participantes sin eliminarlos y mostrarlos en una sección separada, al final y colapsada por defecto.
 - **FR-012:** Los participantes ocultos no deben participar en el orden de turnos ni en el cálculo de fin de ronda; debe ser posible restaurarlos.
 - **FR-013:** La aplicación debe proporcionar un botón para reiniciar todo el encuentro, con confirmación antes de eliminar los datos.
-- **FR-014:** Al reiniciar, deben eliminarse los participantes adicionales y sus anotaciones, restableciéndose Gorr, Lyra, Caedren, Kumiko y Adriana con iniciativa 0, sin anotaciones y visibles.
+- **FR-014:** Al reiniciar, deben eliminarse los participantes adicionales y sus anotaciones, restableciéndose Gorr, Lyra, Caedren, Kumiko, Adriana y Shary con iniciativa 0, sin anotaciones y visibles.
 - **FR-015:** La aplicación debe permitir modificar el nombre y la iniciativa de los participantes predeterminados.
 - **FR-016:** La aplicación debe validar las entradas y comunicar errores de forma comprensible.
 - **FR-017:** La aplicación debe ejecutarse enteramente en el navegador, con frontend y lógica escritos en JavaScript, sin requerir backend.
@@ -145,13 +146,13 @@ Como director/a de juego, quiero reiniciar el encuentro para empezar de nuevo si
 
 ## Criterios de éxito
 
-- Al iniciar o reiniciar, Gorr, Lyra, Caedren, Kumiko y Adriana están presentes y pueden editarse.
+- Al iniciar o reiniciar, Gorr, Lyra, Caedren, Kumiko, Adriana y Shary están presentes y pueden editarse.
 - El director de juego puede añadir otros participantes y verlos ordenados correctamente por iniciativa.
 - El botón de avance actualiza el participante actual y aumenta la ronda exactamente al completar una vuelta de la lista activa.
 - Las anotaciones temporales descuentan rondas y expiran cuando corresponde.
 - Las anotaciones infinitas permanecen hasta su eliminación manual.
 - Los participantes ocultos quedan fuera del orden activo, pero se pueden revisar y restaurar.
-- El reinicio elimina participantes adicionales y configuraciones modificadas solo después de confirmar, dejando los cinco participantes predeterminados con iniciativa 0.
+- El reinicio elimina participantes adicionales y configuraciones modificadas solo después de confirmar, dejando los seis participantes predeterminados con iniciativa 0.
 - La interfaz permite operar el seguimiento del encuentro cómodamente desde un ordenador.
 
 ## Entidades principales
@@ -169,8 +170,8 @@ Como director/a de juego, quiero reiniciar el encuentro para empezar de nuevo si
 
 ## Decisiones de comportamiento
 
-- Los participantes predeterminados son Gorr, Lyra, Caedren, Kumiko y Adriana.
-- Los cinco participantes se crean al iniciar un encuentro nuevo y al reiniciar.
+- Los participantes predeterminados son Gorr, Lyra, Caedren, Kumiko, Adriana y Shary.
+- Los seis participantes se crean al iniciar un encuentro nuevo y al reiniciar.
 - Al reiniciar tienen iniciativa 0, están visibles y sin anotaciones.
 - La lista activa se ordena de mayor a menor iniciativa, por lo que el número más alto actúa primero.
 - En caso de empate, se mantiene el orden de inserción.
@@ -183,5 +184,5 @@ Como director/a de juego, quiero reiniciar el encuentro para empezar de nuevo si
 
 ## Pendiente de decisión
 
-- Si el estado del encuentro debe conservarse al cerrar o recargar el navegador. La especificación requiere funcionamiento sin backend, pero aún no define persistencia local entre sesiones.
+- Si el estado del encuentro debe conservarse al cerrar o recargar el navegador.
 - Si se necesita una acción explícita para volver a una ronda anterior.
