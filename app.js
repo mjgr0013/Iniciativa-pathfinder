@@ -26,6 +26,7 @@ function loadState() {
           participant.order ??= index;
           participant.annotations ??= [];
           participant.hidden ??= false;
+          participant.initiative = Number(participant.initiative) || 0;
         });
         return state;
       }
@@ -70,11 +71,8 @@ function activeParticipants() {
 
 function ensureTurn() {
   const active = activeParticipants();
-  if (!active.length) {
-    state.currentId = null;
-  } else if (!active.some(participant => participant.id === state.currentId)) {
-    state.currentId = active[0].id;
-  }
+  if (!active.length) state.currentId = null;
+  else if (!active.some(participant => participant.id === state.currentId)) state.currentId = active[0].id;
 }
 
 function makeId(prefix = "participant") {
@@ -88,15 +86,16 @@ function render() {
     .filter(participant => participant.hidden)
     .sort((a, b) => a.name.localeCompare(b.name, "es"));
 
-  roundNumber.textContent = state.round;
-  dockRoundNumber.textContent = state.round;
+  roundNumber.textContent = String(state.round);
+  dockRoundNumber.textContent = String(state.round);
   activeCount.textContent = `${active.length} activo${active.length === 1 ? "" : "s"}`;
-  hiddenCount.textContent = hidden.length;
+  hiddenCount.textContent = String(hidden.length);
   nextButton.disabled = active.length === 0;
   currentTurnName.textContent = active.length
     ? `Turno de ${active.find(participant => participant.id === state.currentId)?.name ?? active[0].name}`
     : "No hay participantes activos";
 
+  activeList.hidden = false;
   activeList.replaceChildren();
   hiddenList.replaceChildren();
   active.forEach(participant => activeList.append(createParticipantCard(participant, false)));
@@ -110,14 +109,12 @@ function createParticipantCard(participant, hidden) {
   card.classList.toggle("is-current", !hidden && participant.id === state.currentId);
 
   const initiativeButton = card.querySelector(".initiative-value");
-  initiativeButton.textContent = participant.initiative;
+  initiativeButton.textContent = String(participant.initiative);
   initiativeButton.setAttribute("aria-label", `Editar iniciativa de ${participant.name}, actual ${participant.initiative}`);
   const nameButton = card.querySelector(".participant-name");
   nameButton.textContent = participant.name;
   nameButton.setAttribute("aria-label", `Editar nombre de ${participant.name}`);
   card.querySelector(".current-label").hidden = hidden || participant.id !== state.currentId;
-  const actedLabel = card.querySelector(".acted-label");
-  if (actedLabel) actedLabel.hidden = true;
 
   initiativeButton.addEventListener("click", () => editInline(initiativeButton, participant, "initiative"));
   nameButton.addEventListener("click", () => editInline(nameButton, participant, "name"));
@@ -155,14 +152,13 @@ function createParticipantCard(participant, hidden) {
   const roundsInput = annotationForm.elements.rounds;
   const infiniteInput = annotationForm.elements.infinite;
   addAnnotationButton.hidden = hidden;
+  annotationForm.hidden = true;
   addAnnotationButton.addEventListener("click", () => {
     annotationForm.hidden = !annotationForm.hidden;
     addAnnotationButton.setAttribute("aria-expanded", String(!annotationForm.hidden));
     if (!annotationForm.hidden) annotationForm.elements.text.focus();
   });
-  infiniteInput.addEventListener("change", () => {
-    roundsInput.disabled = infiniteInput.checked;
-  });
+  infiniteInput.addEventListener("change", () => { roundsInput.disabled = infiniteInput.checked; });
   annotationForm.addEventListener("submit", event => {
     event.preventDefault();
     const text = annotationForm.elements.text.value.trim();
@@ -176,7 +172,6 @@ function createParticipantCard(participant, hidden) {
     participant.annotations.push({ id: makeId("annotation"), text, infinite, rounds: infinite ? null : rounds });
     render();
   });
-
   return card;
 }
 
@@ -189,7 +184,6 @@ function editInline(button, participant, field) {
   if (field === "initiative") input.step = "1";
   input.setAttribute("aria-label", field === "initiative" ? `Nueva iniciativa para ${participant.name}` : "Nuevo nombre");
   button.replaceChildren(input);
-  button.classList.add("is-editing");
   input.focus();
   input.select();
 
@@ -205,13 +199,8 @@ function editInline(button, participant, field) {
     render();
   };
   input.addEventListener("keydown", event => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      finish(true);
-    } else if (event.key === "Escape") {
-      event.preventDefault();
-      finish(false);
-    }
+    if (event.key === "Enter") { event.preventDefault(); finish(true); }
+    else if (event.key === "Escape") { event.preventDefault(); finish(false); }
   });
   input.addEventListener("blur", () => finish(true));
 }
@@ -222,10 +211,7 @@ participantForm.addEventListener("submit", event => {
   const initiative = Number(participantForm.elements.initiative.value);
   if (!name) return alert("El nombre es obligatorio.");
   if (!Number.isFinite(initiative)) return alert("La iniciativa debe ser un número.");
-
-  state.participants.push({
-    id: makeId(), name, initiative, hidden: false, annotations: [], order: state.participants.length
-  });
+  state.participants.push({ id: makeId(), name, initiative, hidden: false, annotations: [], order: state.participants.length });
   participantForm.reset();
   participantForm.elements.initiative.value = 0;
   render();
@@ -234,22 +220,27 @@ participantForm.addEventListener("submit", event => {
 nextButton.addEventListener("click", () => {
   const active = activeParticipants();
   if (!active.length) return;
-  const currentIndex = active.findIndex(participant => participant.id === state.currentId);
 
-  if (currentIndex === active.length - 1) {
-    // Completing the last active participant's turn wraps to the first and starts a new round.
-    state.round += 1;
-    active.forEach(participant => {
+  const currentIndex = active.findIndex(participant => participant.id === state.currentId);
+  // If saved state is stale, recover to the first participant without skipping a turn.
+  if (currentIndex < 0) {
+    state.currentId = active[0].id;
+    render();
+    return;
+  }
+
+  const wrapped = currentIndex === active.length - 1;
+  if (wrapped) {
+    state.round = Math.max(1, Number(state.round) || 1) + 1;
+    for (const participant of active) {
       participant.annotations = participant.annotations.filter(annotation => {
         if (annotation.infinite) return true;
-        annotation.rounds -= 1;
+        annotation.rounds = Number(annotation.rounds) - 1;
         return annotation.rounds > 0;
       });
-    });
-    state.currentId = active[0].id;
-  } else {
-    state.currentId = active[currentIndex + 1].id;
+    }
   }
+  state.currentId = active[wrapped ? 0 : currentIndex + 1].id;
   render();
 });
 
@@ -260,7 +251,6 @@ function hideParticipant(id) {
   const currentIndex = active.findIndex(item => item.id === state.currentId);
   const isCurrent = participant.id === state.currentId;
   participant.hidden = true;
-
   if (isCurrent) {
     const nextVisible = active.slice(currentIndex + 1).find(item => !item.hidden)
       ?? active.slice(0, currentIndex).find(item => !item.hidden);
@@ -279,9 +269,8 @@ function restoreParticipant(id) {
 function removeParticipant(id) {
   const participant = state.participants.find(item => item.id === id);
   if (!participant || !window.confirm(`¿Eliminar permanentemente a ${participant.name}?`)) return;
-  const wasCurrent = participant.id === state.currentId;
   state.participants = state.participants.filter(item => item.id !== id);
-  if (wasCurrent) state.currentId = null;
+  if (participant.id === state.currentId) state.currentId = null;
   render();
 }
 
