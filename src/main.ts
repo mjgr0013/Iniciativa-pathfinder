@@ -28,6 +28,11 @@ const hiddenChevron = requiredElement<HTMLElement>("#hidden-chevron");
 const addHiddenParticipant = requiredElement<HTMLButtonElement>("#add-hidden-participant");
 
 const CAEDREN_TOKEN_URL = new URL("./IMG_3618.png", import.meta.url).href;
+const ADRIANA_TOKEN_URL = new URL("../5311d4c0-a2a8-454a-828f-7cf905d7a514.jpeg", import.meta.url).href;
+const LYRA_TOKEN_URL = new URL("../5620c905-fc55-4688-9797-27199755492c.jpeg", import.meta.url).href;
+const SHARY_TOKEN_URL = new URL("../b0602670-1326-46cb-b573-73b7465768b0.jpeg", import.meta.url).href;
+const KUMIKO_TOKEN_URL = new URL("../c9c3f7e4-ae8e-4d03-8958-7e2904cf8986.jpeg", import.meta.url).href;
+const GORR_TOKEN_URL = new URL("../d2b5f2f7-f8c1-4bb3-bf47-96d876f95a83.jpeg", import.meta.url).href;
 const DEFAULT_NAMES = ["Gorr", "Lyra", "Caedren", "Kumiko", "Adriana", "Shary"];
 let pendingRemovalAnimations = 0;
 
@@ -57,6 +62,19 @@ function makeFallbackToken(name: string): string {
   const initials = name.trim().split(/\s+/).slice(0, 2).map((part) => part[0] ?? "").join("").toUpperCase();
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 102 102"><rect width="102" height="102" rx="20" fill="${background}"/><circle cx="51" cy="49" r="34" fill="none" stroke="${accent}" stroke-width="3"/><circle cx="51" cy="43" r="17" fill="${accent}" opacity=".25"/><text x="51" y="57" text-anchor="middle" fill="#fff" font-family="sans-serif" font-size="28" font-weight="700">${initials}</text></svg>`;
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+function getParticipantToken(name: string): string {
+  const normalizedName = name.trim().toLocaleLowerCase("es");
+  const tokenUrls: Record<string, string> = {
+    caedren: CAEDREN_TOKEN_URL,
+    adriana: ADRIANA_TOKEN_URL,
+    lyra: LYRA_TOKEN_URL,
+    shary: SHARY_TOKEN_URL,
+    kumiko: KUMIKO_TOKEN_URL,
+    gorr: GORR_TOKEN_URL,
+  };
+  return tokenUrls[normalizedName] ?? makeFallbackToken(name);
 }
 
 function animateAnnotationRemoval(item: HTMLElement, onComplete?: () => void): void {
@@ -134,7 +152,7 @@ function createParticipantCard(participant: Participant, isHidden: boolean): HTM
   if (isDefaultParticipant(participant)) {
     const token = document.createElement("img");
     token.className = "participant-token";
-    token.src = participant.name.toLocaleLowerCase("es") === "caedren" ? CAEDREN_TOKEN_URL : makeFallbackToken(participant.name);
+    token.src = getParticipantToken(participant.name);
     token.alt = `Token de ${participant.name}`;
     token.width = 64;
     token.height = 64;
