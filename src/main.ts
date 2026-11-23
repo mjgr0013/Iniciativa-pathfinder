@@ -32,7 +32,7 @@ const ADRIANA_TOKEN_URL = new URL("../5311d4c0-a2a8-454a-828f-7cf905d7a514.jpeg"
 const LYRA_TOKEN_URL = new URL("../5620c905-fc55-4688-9797-27199755492c.jpeg", import.meta.url).href;
 const SHARY_TOKEN_URL = new URL("../b0602670-1326-46cb-b573-73b7465768b0.jpeg", import.meta.url).href;
 const KUMIKO_TOKEN_URL = new URL("../c9c3f7e4-ae8e-4d03-8958-7e2904cf8986.jpeg", import.meta.url).href;
-const GORR_TOKEN_URL = new URL("../d2b5f7-f8c1-4bb3-bf47-96d876f95a83.jpeg", import.meta.url).href;
+const GORR_TOKEN_URL = new URL("../d2b5f2f7-f8c1-4bb3-bf47-96d876f95a83.jpeg", import.meta.url).href;
 const DEFAULT_NAMES = ["Gorr", "Lyra", "Caedren", "Kumiko", "Adriana", "Shary"];
 let pendingRemovalAnimations = 0;
 
@@ -274,7 +274,7 @@ participantForm.addEventListener("submit", (event) => {
 addHiddenParticipant.addEventListener("click", () => addParticipantFromForm(true));
 
 globalAnnotationForm.addEventListener("submit", (event) => {
-  event.preventEvent();
+  event.preventDefault();
   const textInput = requiredElement<HTMLInputElement>('[name="text"]', globalAnnotationForm);
   const roundsInput = requiredElement<HTMLInputElement>('[name="rounds"]', globalAnnotationForm);
   const text = textInput.value.trim();
@@ -330,7 +330,7 @@ nextButton.addEventListener("click", () => {
 
 resetButton.addEventListener("click", () => resetDialog.showModal());
 confirmReset.addEventListener("click", (event) => {
-  event.preventEvent();
+  event.preventDefault();
   encounterStore.getState().resetEncounter();
   resetDialog.close();
 });
