@@ -39,16 +39,16 @@ describe("persistencia", () => {
     expect(migrated).toEqual({
       round: 2,
       currentId: "default-2-1",
-      globalAnnotations: [{ id: "g", text: "niebla", remainingRounds: null, anchor: null, awaitingFirstTurn: false }],
+      globalAnnotations: [{ id: "g", text: "niebla", remainingRounds: null, anchor: null }],
       participants: [
-        { id: "default-0-1", name: "Gorr", initiative: 12, hidden: false, order: 0, presetId: "gorr", annotations: [{ id: "a", text: "furia", remainingRounds: 3, anchor: null, awaitingFirstTurn: false }] },
+        { id: "default-0-1", name: "Gorr", initiative: 12, hidden: false, order: 0, presetId: "gorr", annotations: [{ id: "a", text: "furia", remainingRounds: 3, anchor: null }] },
         { id: "default-2-1", name: "Caedrén el Sabio", initiative: 8, hidden: false, order: 2, presetId: "caedren", annotations: [] },
         { id: "participant-x", name: "Lyra", initiative: 5, hidden: true, order: 7, presetId: null, annotations: [] },
       ],
     });
   });
 
-  it("conserva el ancla de las globales, descarta las mal formadas e ignora la de las de participante", () => {
+  it("conserva el ancla de las anotaciones y descarta las mal formadas", () => {
     const anchor = { participantId: "a", name: "A", initiative: 12, order: 0 };
     const migrated = normalizeEncounter({
       schemaVersion: 5,
@@ -59,18 +59,7 @@ describe("persistencia", () => {
       ],
     });
     expect(migrated?.globalAnnotations.map((annotation) => annotation.anchor)).toEqual([anchor, null]);
-    expect(migrated?.participants[0]!.annotations[0]!.anchor).toBeNull();
-  });
-
-  it("conserva la marca de anotación pendiente de su primer turno", () => {
-    const migrated = normalizeEncounter({
-      schemaVersion: 5,
-      participants: [{ id: "a", name: "A", initiative: 1, order: 0, annotations: [
-        { id: "x", text: "x", remainingRounds: 1, awaitingFirstTurn: true },
-        { id: "y", text: "y", remainingRounds: 1 },
-      ] }],
-    });
-    expect(migrated?.participants[0]!.annotations.map((annotation) => annotation.awaitingFirstTurn)).toEqual([true, false]);
+    expect(migrated?.participants[0]!.annotations[0]!.anchor).toEqual(anchor);
   });
 
   it("acepta anclas sin nombre (guardadas antes de mostrar el token en las globales)", () => {

@@ -77,7 +77,7 @@ export function mountApp(store: EncounterStore): void {
     el.activeCount.textContent = `${active.length} ${active.length === 1 ? "activo" : "activos"}`;
     el.hiddenCount.textContent = String(hidden.length);
 
-    /** Participante en cuyo turno descuenta una anotación global; si ya no está, el nombre que tenía. */
+    /** Quien desencadenó una anotación (en cuyo turno descuenta y expira); si ya no está, el nombre que tenía. */
     const turnOwner = (annotation: Annotation): TokenOwner | null => {
       const { anchor } = annotation;
       if (!anchor) return null;
@@ -89,11 +89,12 @@ export function mountApp(store: EncounterStore): void {
       createParticipantCard(el.template, participant, {
         isCurrent: !participant.hidden && participant.id === state.currentId,
         annotationFormOpen: ui.openAnnotationForms.has(participant.id),
+        turnOwner,
       });
     ui.activeCards = new Map(active.map((participant) => [participant.id, card(participant)]));
     el.hiddenList.replaceChildren(...hidden.map(card));
 
-    const globals = state.globalAnnotations.map((annotation) => createAnnotationChip(annotation, turnOwner(annotation), "global"));
+    const globals = state.globalAnnotations.map((annotation) => createAnnotationChip(annotation, turnOwner(annotation)));
     el.globalList.replaceChildren(
       ...(globals.length ? globals : [makeEmptyState("Los efectos que añadas aquí se aplicarán a todo el encuentro.")]),
     );

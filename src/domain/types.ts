@@ -2,8 +2,8 @@ export const PRESET_IDS = ["gorr", "lyra", "caedren", "kumiko", "adriana", "shar
 export type PresetId = (typeof PRESET_IDS)[number];
 
 /**
- * Punto de la iniciativa donde empezó un efecto: el participante que tenía el turno al crearlo.
- * Guarda su iniciativa y orden por si ese participante se elimina: su posición sigue contando.
+ * Punto de la iniciativa donde empezó un efecto: el participante que tenía el turno al crearlo (quien lo
+ * desencadenó). Guarda su iniciativa y orden por si ese participante se elimina: su posición sigue contando.
  */
 export interface TurnAnchor {
   participantId: string;
@@ -19,16 +19,11 @@ export interface Annotation {
   /** Rondas restantes; `null` significa duración infinita. */
   remainingRounds: number | null;
   /**
-   * Solo en anotaciones globales: las rondas se cuentan desde aquí (cada vez que el turno llega a este punto
-   * se descuenta una). `null` = inicio de ronda. Las de un participante se cuentan en el turno de su portador
-   * y lo tienen siempre a `null`.
+   * Turno de quien desencadenó la anotación: cada vez que el turno vuelve a este punto se descuenta una ronda,
+   * y al llegar a 0 expira en ese momento. `null` (anotaciones guardadas por versiones anteriores, o creadas sin
+   * nadie en turno) = inicio de ronda.
    */
   anchor: TurnAnchor | null;
-  /**
-   * Solo en anotaciones de participante: `true` hasta que empieza el primer turno de su portador tras añadirla.
-   * Ese turno es el que le afecta, así que al empezar no descuenta: solo se limpia la marca.
-   */
-  awaitingFirstTurn: boolean;
 }
 
 export interface Participant {

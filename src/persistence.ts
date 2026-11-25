@@ -14,7 +14,7 @@ function presetByName(name: string): PresetId | null {
   return PRESET_IDS.find((id) => PRESET_NAMES[id].toLocaleLowerCase("es") === lower) ?? null;
 }
 
-/** Esquemas < 5 no guardaban el ancla: esas anotaciones descuentan al empezar cada ronda, como entonces. */
+/** Datos antiguos sin ancla: esas anotaciones descuentan al empezar cada ronda. */
 function normalizeAnchor(raw: unknown): TurnAnchor | null {
   if (!isObject(raw) || typeof raw.participantId !== "string") return null;
   const initiative = Number(raw.initiative);
@@ -22,8 +22,7 @@ function normalizeAnchor(raw: unknown): TurnAnchor | null {
   return { participantId: raw.participantId, name: typeof raw.name === "string" ? raw.name : "", initiative, order: raw.order as number };
 }
 
-/** `keepAnchor` distingue las globales (con ancla) de las de participante (con marca de turno propio). */
-function normalizeAnnotations(value: unknown, idPrefix: string, keepAnchor: boolean): Annotation[] {
+function normalizeAnnotations(value: unknown, idPrefix: string): Annotation[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((raw, index): Annotation[] => {
     if (!isObject(raw) || typeof raw.text !== "string") return [];
@@ -34,8 +33,7 @@ function normalizeAnnotations(value: unknown, idPrefix: string, keepAnchor: bool
       id: typeof raw.id === "string" ? raw.id : `${idPrefix}-annotation-${index}`,
       text: raw.text,
       remainingRounds: infinite ? null : Math.max(1, Math.trunc(duration)),
-      anchor: keepAnchor ? normalizeAnchor(raw.anchor) : null,
-      awaitingFirstTurn: !keepAnchor && raw.awaitingFirstTurn === true,
+      anchor: normalizeAnchor(raw.anchor),
     }];
   });
 }
@@ -60,8 +58,7 @@ function normalizeParticipant(raw: unknown, index: number): Participant | null {
     name: raw.name,
     initiative: Number.isFinite(initiative) ? initiative : 0,
     hidden: raw.hidden === true,
-    // Las anotaciones de participante se cuentan en el turno de su portador: el ancla no aplica.
-    annotations: normalizeAnnotations(raw.annotations, raw.id, false),
+    annotations: normalizeAnnotations(raw.annotations, raw.id),
     order: Number.isInteger(raw.order) ? (raw.order as number) : index,
     presetId: inferPresetId(raw, raw.name),
   };
@@ -95,7 +92,7 @@ export function normalizeEncounter(raw: unknown): Encounter | null {
     round: Number.isInteger(raw.round) ? Math.max(1, raw.round as number) : 1,
     participants,
     currentId: active.some((participant) => participant.id === savedCurrentId) ? savedCurrentId : active[0]?.id ?? null,
-    globalAnnotations: normalizeAnnotations(raw.globalAnnotations, "global", true),
+    globalAnnotations: normalizeAnnotations(raw.globalAnnotations, "global"),
   };
 }
 
