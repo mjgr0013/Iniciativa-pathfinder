@@ -35,7 +35,7 @@ function normalizeAnnotations(value: unknown, idPrefix: string, keepAnchor: bool
       text: raw.text,
       remainingRounds: infinite ? null : Math.max(1, Math.trunc(duration)),
       anchor: keepAnchor ? normalizeAnchor(raw.anchor) : null,
-      addedDuringOwnTurn: !keepAnchor && raw.addedDuringOwnTurn === true,
+      awaitingFirstTurn: !keepAnchor && raw.awaitingFirstTurn === true,
     }];
   });
 }

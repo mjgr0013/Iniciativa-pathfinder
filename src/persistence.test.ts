@@ -39,9 +39,9 @@ describe("persistencia", () => {
     expect(migrated).toEqual({
       round: 2,
       currentId: "default-2-1",
-      globalAnnotations: [{ id: "g", text: "niebla", remainingRounds: null, anchor: null, addedDuringOwnTurn: false }],
+      globalAnnotations: [{ id: "g", text: "niebla", remainingRounds: null, anchor: null, awaitingFirstTurn: false }],
       participants: [
-        { id: "default-0-1", name: "Gorr", initiative: 12, hidden: false, order: 0, presetId: "gorr", annotations: [{ id: "a", text: "furia", remainingRounds: 3, anchor: null, addedDuringOwnTurn: false }] },
+        { id: "default-0-1", name: "Gorr", initiative: 12, hidden: false, order: 0, presetId: "gorr", annotations: [{ id: "a", text: "furia", remainingRounds: 3, anchor: null, awaitingFirstTurn: false }] },
         { id: "default-2-1", name: "Caedrén el Sabio", initiative: 8, hidden: false, order: 2, presetId: "caedren", annotations: [] },
         { id: "participant-x", name: "Lyra", initiative: 5, hidden: true, order: 7, presetId: null, annotations: [] },
       ],
@@ -62,15 +62,15 @@ describe("persistencia", () => {
     expect(migrated?.participants[0]!.annotations[0]!.anchor).toBeNull();
   });
 
-  it("conserva la marca de anotación recibida en el propio turno", () => {
+  it("conserva la marca de anotación pendiente de su primer turno", () => {
     const migrated = normalizeEncounter({
       schemaVersion: 5,
       participants: [{ id: "a", name: "A", initiative: 1, order: 0, annotations: [
-        { id: "x", text: "x", remainingRounds: 1, addedDuringOwnTurn: true },
+        { id: "x", text: "x", remainingRounds: 1, awaitingFirstTurn: true },
         { id: "y", text: "y", remainingRounds: 1 },
       ] }],
     });
-    expect(migrated?.participants[0]!.annotations.map((annotation) => annotation.addedDuringOwnTurn)).toEqual([true, false]);
+    expect(migrated?.participants[0]!.annotations.map((annotation) => annotation.awaitingFirstTurn)).toEqual([true, false]);
   });
 
   it("añade a Shary en datos anteriores al esquema 3", () => {

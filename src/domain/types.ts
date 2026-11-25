@@ -23,10 +23,10 @@ export interface Annotation {
    */
   anchor: TurnAnchor | null;
   /**
-   * Solo en anotaciones de participante: `true` si se añadió durante el turno de su propio portador. Ese turno
-   * ya estaba en marcha y no cuenta: al terminarlo se limpia la marca sin descontar.
+   * Solo en anotaciones de participante: `true` hasta que empieza el primer turno de su portador tras añadirla.
+   * Ese turno es el que le afecta, así que al empezar no descuenta: solo se limpia la marca.
    */
-  addedDuringOwnTurn: boolean;
+  awaitingFirstTurn: boolean;
 }
 
 export interface Participant {
