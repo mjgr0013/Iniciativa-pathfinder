@@ -1,12 +1,12 @@
 # Especificación: Iniciativa Pathfinder
 
-> **Estado:** especificación inicial para GitHub Spec Kit
+> **Estado:** especificación vigente; refleja el comportamiento implementado (GitHub Spec Kit)
 > **Idioma de la interfaz:** español
-> **Plataforma:** aplicación web de frontend; toda la lógica se implementará en JavaScript, sin backend.
+> **Plataforma:** aplicación web de frontend que se ejecuta íntegramente en el navegador, sin backend. El código fuente está escrito en TypeScript y se compila a JavaScript.
 
 ## Resumen
 
-Aplicación web para que un director de juego gestione el orden de iniciativa durante un encuentro de Pathfinder. Permite añadir participantes con un valor numérico de iniciativa, verlos ordenados por iniciativa, avanzar turnos y gestionar anotaciones temporales o permanentes.
+Aplicación web para que un director de juego gestione el orden de iniciativa durante un encuentro de Pathfinder. Permite añadir participantes con un valor numérico de iniciativa, verlos en orden de actuación, avanzar turnos y gestionar anotaciones temporales o permanentes, tanto de cada participante como globales del encuentro.
 
 Los participantes Gorr, Lyra, Caedren, Kumiko, Adriana y Shary estarán disponibles siempre como participantes predeterminados del encuentro.
 
@@ -31,12 +31,13 @@ Al iniciar un encuentro nuevo o reiniciar el encuentro actual, la aplicación de
 
 **Escenarios de aceptación:**
 
-- Los seis participantes aparecen como activos al iniciar o reiniciar, a menos que exista una decisión posterior de persistencia que indique lo contrario.
+- Los seis participantes aparecen como activos al iniciar sin datos guardados o al reiniciar. Si hay un encuentro guardado en el navegador, se restaura tal como estaba.
 - Al iniciar sin datos, los participantes deben tener la iniciativa establecida en 0 hasta que el director introduzca otra.
-- El usuario puede cambiar la iniciativa de cualquier participante predeterminado.
+- Cada participante predeterminado muestra su retrato, ligado al personaje y no al nombre (se conserva aunque se renombre).
+- El usuario puede cambiar el nombre y la iniciativa de cualquier participante predeterminado.
 - El usuario puede ocultar cualquier participante predeterminado sin eliminarlo permanentemente.
 - El usuario puede restaurar cualquier participante predeterminado oculto.
-- El usuario puede eliminar permanentemente un participante predeterminado si la interfaz permite esa acción.
+- Los participantes predeterminados no se pueden eliminar permanentemente; solo ocultar.
 - El reinicio elimina los participantes adicionales y restablece Gorr, Lyra, Caedren, Kumiko, Adriana y Shary.
 
 ## Historias de usuario y escenarios
@@ -48,11 +49,16 @@ Como director/a de juego, quiero añadir participantes con su nombre y su númer
 **Escenarios de aceptación:**
 
 - Al añadir un participante con nombre e iniciativa válidos, aparece en la lista.
-- La iniciativa se acepta y valida como número.
-- La lista se ordena automáticamente de mayor a menor iniciativa; el valor más alto actúa primero.
+- La iniciativa se acepta y valida como número (puede ser negativa).
+- El nombre es obligatorio y tiene como máximo 40 caracteres.
+- El orden de actuación es de mayor a menor iniciativa; el valor más alto actúa primero.
 - Si hay empate, se conserva el orden en que se añadieron los participantes empatados.
-- La aplicación informa de forma clara si falta el nombre o la iniciativa no es válida.
+- La aplicación informa de forma clara, junto al formulario, si falta el nombre o la iniciativa no es válida.
+- Un participante puede añadirse como activo o directamente como oculto.
+- Los participantes añadidos muestran, en lugar de retrato, un recuadro del mismo tamaño con sus iniciales.
+- El nombre y la iniciativa de cualquier participante se editan en línea, pulsando sobre ellos: Enter guarda, Escape cancela y salir del campo guarda si el valor es válido.
 - Los participantes predeterminados ya existen y pueden editarse sin tener que volver a añadirse.
+- Un participante añadido puede eliminarse permanentemente, junto con sus anotaciones, tras confirmarlo.
 
 ### US2 — Avanzar al siguiente participante
 
@@ -60,10 +66,12 @@ Como director/a de juego, quiero avanzar con un botón para actualizar quién es
 
 **Escenarios de aceptación:**
 
-- El primer participante visible de la lista activa es siempre el actual y se destaca visualmente.
-- Al pulsar el botón de avanzar, el siguiente participante de la lista activa pasa a ser el actual.
-- Al avanzar desde el último participante activo, el turno vuelve al primero y comienza una nueva ronda.
+- El primer participante visible de la lista activa es siempre el actual y se destaca visualmente (también con la etiqueta «Turno actual», no solo con color).
+- Al pulsar el botón de avanzar, el siguiente participante en orden de iniciativa pasa a ser el actual y la lista rota para mostrarlo primero.
+- Al avanzar desde el participante activo de menor iniciativa, el turno vuelve al de mayor iniciativa y comienza una nueva ronda.
+- Un separador en la lista indica dónde empieza la siguiente ronda.
 - Si no hay participantes activos, el botón no avanza el turno ni incrementa la ronda.
+- El director puede dar el turno a otro participante con doble clic en su tarjeta (o pulsación larga en pantallas táctiles), tras confirmarlo; un clic simple no cambia el turno.
 
 ### US3 — Consultar el contador de rondas
 
@@ -72,7 +80,7 @@ Como director/a de juego, quiero ver la ronda actual para saber cuánto ha avanz
 **Escenarios de aceptación:**
 
 - El contador comienza en la ronda 1 cuando empieza el seguimiento del encuentro.
-- La ronda aumenta en uno cuando todos los participantes activos han actuado y el turno vuelve al primero.
+- La ronda aumenta en uno cuando todos los participantes activos han actuado y el turno vuelve al de mayor iniciativa.
 - El número de ronda actual está visible en la interfaz.
 
 ### US4 — Añadir y gestionar anotaciones
@@ -82,8 +90,9 @@ Como director/a de juego, quiero añadir anotaciones a cada participante con una
 **Escenarios de aceptación:**
 
 - Cada participante puede tener cero o más anotaciones.
-- Una anotación incluye un texto y una duración: un número de rondas o duración infinita.
-- Las anotaciones con duración finita muestran cuántas rondas les quedan.
+- Una anotación incluye un texto (obligatorio, como máximo 80 caracteres) y una duración: un número entero de rondas o duración infinita (se indica con 0).
+- Las anotaciones con duración finita muestran cuántas rondas les quedan («Última ronda» cuando queda una, con un indicador adicional que no depende del color).
+- Al pasar el puntero sobre una anotación se indica a qué turno afectará o cuándo se quitará.
 - Cada ronda de duración cubre un turno de quien sufre la anotación, empezando por su primer turno tras añadirla. La anotación se quita justo antes del turno siguiente al último afectado, mientras se muestra como «Última ronda».
 - Ejemplo: en el turno de «Personaje 1» se aplica «Aturdido, 1 ronda» a «Personaje 2», que actúa después. «Personaje 2» está aturdido durante su turno, el estado sigue visible el resto de la ronda y se quita justo antes de su siguiente turno.
 - Ejemplo: en el turno de «Personaje 1» se añade una anotación de 1 ronda a «Personaje 1» y otra de 2 rondas a «Personaje 2». La de «Personaje 1» le afecta en su turno de la ronda 2 y se quita justo antes de su turno de la ronda 3; la de «Personaje 2» le afecta en sus turnos de las rondas 1 y 2 y se quita justo antes de su turno de la ronda 3.
@@ -91,6 +100,7 @@ Como director/a de juego, quiero añadir anotaciones a cada participante con una
 - Una anotación finita se elimina automáticamente cuando su duración llega a cero.
 - Una anotación infinita permanece hasta que el director de juego la quite manualmente.
 - El director de juego puede quitar manualmente cualquier anotación antes de que expire.
+- Además de las de cada participante, existen anotaciones globales del encuentro (ver «Funcionalidades adicionales»).
 - La interfaz distingue las anotaciones permanentes de las temporales sin depender únicamente del color.
 
 ### US5 — Ocultar y revisar participantes
@@ -122,7 +132,7 @@ Como director/a de juego, quiero reiniciar el encuentro para empezar de nuevo si
 ## Requisitos funcionales
 
 - **FR-001:** La aplicación debe permitir añadir participantes con nombre e iniciativa numérica.
-- **FR-002:** La lista activa debe ordenarse automáticamente de mayor a menor iniciativa; el valor más alto va primero.
+- **FR-002:** El orden de actuación debe ser de mayor a menor iniciativa; el valor más alto actúa primero. La lista activa se muestra rotada a partir del participante actual.
 - **FR-003:** Los empates deben conservar el orden de inserción.
 - **FR-004:** El primer participante de la lista activa debe ser el participante actual.
 - **FR-005:** Un botón debe avanzar al siguiente participante activo.
@@ -135,9 +145,11 @@ Como director/a de juego, quiero reiniciar el encuentro para empezar de nuevo si
 - **FR-012:** Los participantes ocultos no deben participar en el orden de turnos ni en el cálculo de fin de ronda; debe ser posible restaurarlos.
 - **FR-013:** La aplicación debe proporcionar un botón para reiniciar todo el encuentro, con confirmación antes de eliminar los datos.
 - **FR-014:** Al reiniciar, deben eliminarse los participantes adicionales y sus anotaciones, restableciéndose Gorr, Lyra, Caedren, Kumiko, Adriana y Shary con iniciativa 0, sin anotaciones y visibles.
-- **FR-015:** La aplicación debe permitir modificar el nombre y la iniciativa de los participantes predeterminados.
+- **FR-015:** La aplicación debe permitir modificar el nombre y la iniciativa de cualquier participante, incluidos los predeterminados.
 - **FR-016:** La aplicación debe validar las entradas y comunicar errores de forma comprensible.
-- **FR-017:** La aplicación debe ejecutarse enteramente en el navegador, con frontend y lógica escritos en JavaScript, sin requerir backend.
+- **FR-017:** La aplicación debe ejecutarse enteramente en el navegador, sin requerir backend.
+- **FR-018:** El estado del encuentro debe conservarse en el navegador al cerrar o recargar la página.
+- **FR-019:** Cambiar manualmente el participante actual debe requerir una acción deliberada (doble clic o pulsación larga) y confirmación.
 
 ## Requisitos no funcionales
 
@@ -146,14 +158,15 @@ Como director/a de juego, quiero reiniciar el encuentro para empezar de nuevo si
 - **NFR-003:** Añadir participantes, avanzar turnos, ocultar participantes y reiniciar deben ser acciones sencillas y claramente accesibles.
 - **NFR-004:** La interfaz debe seguir siendo utilizable en pantallas más pequeñas, aunque el uso principal sea en PC.
 - **NFR-005:** La información importante no debe distinguirse exclusivamente mediante colores.
-- **NFR-006:** La solución debe utilizar JavaScript para la aplicación y no depender de servicios de servidor.
+- **NFR-006:** La solución debe ejecutarse como JavaScript en el navegador (compilado desde TypeScript) y no depender de servicios de servidor.
+- **NFR-007:** La lógica del encuentro (turnos, rondas, duración de anotaciones) debe estar separada de la interfaz y cubierta por tests automatizados.
 
 ## Criterios de éxito
 
 - Al iniciar o reiniciar, Gorr, Lyra, Caedren, Kumiko, Adriana y Shary están presentes y pueden editarse.
 - El director de juego puede añadir otros participantes y verlos ordenados correctamente por iniciativa.
 - El botón de avance actualiza el participante actual y aumenta la ronda exactamente al completar una vuelta de la lista activa.
-- Las anotaciones temporales descuentan rondas y expiran cuando corresponde.
+- Las anotaciones temporales de un participante le afectan tantos turnos como rondas de duración y se quitan justo antes de su siguiente turno; las globales expiran al volver el turno en que se crearon.
 - Las anotaciones infinitas permanecen hasta su eliminación manual.
 - Los participantes ocultos quedan fuera del orden activo, pero se pueden revisar y restaurar.
 - El reinicio elimina participantes adicionales y configuraciones modificadas solo después de confirmar, dejando los seis participantes predeterminados con iniciativa 0.
@@ -161,9 +174,9 @@ Como director/a de juego, quiero reiniciar el encuentro para empezar de nuevo si
 
 ## Entidades principales
 
-- **Encuentro:** lista de participantes, número de ronda actual y posición del turno activo.
-- **Participante:** identificador, nombre, valor numérico de iniciativa, estado visible u oculto y lista de anotaciones.
-- **Anotación:** identificador, texto y duración restante en rondas o duración infinita.
+- **Encuentro:** lista de participantes, número de ronda actual, participante actual y lista de anotaciones globales.
+- **Participante:** identificador, nombre, valor numérico de iniciativa, orden de inserción (para desempates), estado visible u oculto, personaje predeterminado al que corresponde (si lo es) y lista de anotaciones.
+- **Anotación:** identificador, texto y duración restante en rondas o duración infinita. Las de participante indican además si aún esperan su primer turno afectado; las globales guardan el turno en que se crearon (participante, iniciativa y orden).
 
 ## Fuera de alcance
 

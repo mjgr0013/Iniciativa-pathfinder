@@ -1,11 +1,14 @@
 # Iniciativa Pathfinder
 
-Aplicación web (TypeScript + Vite, sin backend) para gestionar iniciativa, rondas y anotaciones temporales o infinitas en encuentros de Pathfinder. La especificación funcional está en [`specifications.md`](specifications.md).
+Aplicación web (TypeScript + Vite, sin backend) para gestionar iniciativa, rondas y anotaciones temporales o infinitas en encuentros de Pathfinder. La especificación funcional, con ejemplos de duración de anotaciones, está en [`specifications.md`](specifications.md).
 
 ## Comportamiento
 
-- Incluye por defecto a Gorr, Lyra, Caedren, Kumiko, Adriana y Shary (no se pueden eliminar, solo ocultar).
-- Orden por iniciativa descendente; los empates conservan el orden de inserción.
+- Incluye por defecto a Gorr, Lyra, Caedren, Kumiko, Adriana y Shary, con su retrato (no se pueden eliminar, solo ocultar). Los participantes añadidos muestran sus iniciales.
+- Orden por iniciativa descendente; los empates conservan el orden de inserción. La lista se muestra rotada desde el turno actual, con un separador donde empieza la siguiente ronda.
+- «Siguiente turno» avanza; para dar el turno a otro participante a mano: doble clic (o pulsación larga en móvil) y confirmar.
+- Nombre e iniciativa se editan en línea pulsando sobre ellos.
+- Ocultar o eliminar al participante actual cuenta como terminar su turno.
 - Las anotaciones (de participante o globales) duran las rondas indicadas; `0` significa infinita.
 - Cada ronda de una anotación de participante cubre un turno de ese participante, empezando por el primero tras añadirla; se quita justo antes del turno siguiente al último afectado. Las globales, al no tener portador, cuentan desde el turno en que se crean.
 - El encuentro se guarda en `localStorage`; los datos de versiones anteriores se migran automáticamente.
@@ -14,11 +17,15 @@ Aplicación web (TypeScript + Vite, sin backend) para gestionar iniciativa, rond
 
 ```
 src/
-  domain/        Lógica pura del encuentro (sin DOM) y validación de entradas — cubierta por tests
-  persistence.ts Carga/guardado en localStorage y migración de esquemas antiguos
-  store.ts       Store de Zustand: delega cada acción en el dominio
-  ui/            Render y eventos (delegados) del DOM
-  main.ts        Punto de entrada
+  domain/          Lógica pura del encuentro (sin DOM): turnos, rondas, duración de anotaciones
+                   y validación de entradas — cubierta por tests
+  persistence.ts   Carga/guardado en localStorage y migración de esquemas antiguos
+  store.ts         Store de Zustand: delega cada acción en el dominio
+  ui/              Render y eventos (delegados) del DOM: tarjetas, anotaciones, edición en línea,
+                   diálogo de confirmación, tokens (retratos e iniciales)
+  assets/tokens/   Retratos de los participantes predeterminados (256 px)
+  styles.css       Estilos
+  main.ts          Punto de entrada
 ```
 
 ## Desarrollo
