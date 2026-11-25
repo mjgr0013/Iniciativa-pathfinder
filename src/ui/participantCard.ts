@@ -27,7 +27,7 @@ export function createParticipantCard(template: HTMLTemplateElement, participant
   name.textContent = participant.name;
   name.setAttribute("aria-label", `${participant.name}. Editar nombre`);
 
-  requiredElement(".annotations", card).append(...participant.annotations.map((annotation) => createAnnotationChip(annotation, participant.name)));
+  requiredElement(".annotations", card).append(...participant.annotations.map((annotation) => createAnnotationChip(annotation, participant.name, "participant")));
 
   const toggleForm = action(card, "toggle-annotation-form");
   toggleForm.hidden = hidden;

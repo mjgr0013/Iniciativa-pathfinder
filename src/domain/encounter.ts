@@ -123,10 +123,12 @@ export function setCurrent(encounter: Encounter, id: string): Encounter {
 
 // ---------- Paso del turno y duración de las anotaciones ----------
 //
-// Las rondas de una anotación se cuentan en el turno de quien la sufre: descuenta una cada vez que empieza
-// el turno de su portador y, al llegar a 0, expira justo entonces. Así, un efecto de 2 rondas puesto a
-// «Personaje 2» dura hasta el turno de «Personaje 2», aunque se añadiera en el turno de otro.
-// Las globales no tienen portador: se cuentan desde el turno en que se crearon (su `anchor`).
+// Cada ronda de duración de una anotación de participante cubre un turno completo de quien la sufre: descuenta
+// al TERMINAR el turno de su portador y, al llegar a 0, expira en ese momento. Así, «Aturdido 1 ronda» puesto a
+// «Personaje 2» en el turno de «Personaje 1» le afecta durante su turno y desaparece al acabarlo. Si se añade
+// en el propio turno del portador, ese turno (ya en marcha) no cuenta.
+// Las globales no tienen portador: se cuentan desde el turno en que se crearon (su `anchor`) y descuentan
+// al llegar de nuevo ese turno.
 
 type Slot = Pick<Participant, "initiative" | "order">;
 
@@ -147,9 +149,9 @@ function anchorAtCurrentTurn(encounter: Encounter): TurnAnchor | null {
 
 /**
  * Pasa el turno de quien lo tiene en `before` a `nextId`, sobre el estado `after` (que puede no incluir ya a
- * quien lo tenía). Si da la vuelta a la lista, empieza una ronda nueva. Descuentan una ronda las anotaciones
- * cuyo punto de referencia (su portador, o el ancla en las globales) queda en el tramo recorrido,
- * (actual, siguiente]; las que llegan a 0 expiran.
+ * quien lo tenía). Si da la vuelta a la lista, empieza una ronda nueva. Termina el turno de quien lo tenía,
+ * así que descuentan sus anotaciones (si sigue activo); las globales descuentan si su ancla queda en el tramo
+ * recorrido, (actual, siguiente]. Las que llegan a 0 expiran.
  */
 function passTurn(before: Encounter, after: Encounter, nextId: string | null): Encounter {
   const from = before.participants.find((participant) => participant.id === before.currentId);
@@ -170,12 +172,18 @@ function passTurn(before: Encounter, after: Encounter, nextId: string | null): E
     currentId: nextId,
     round: wrapped ? after.round + 1 : after.round,
     participants: after.participants.map((participant) =>
-      participant.hidden || !isReached(participant)
-        ? participant
-        : { ...participant, annotations: tickAnnotations(participant.annotations) },
+      participant.id === from.id && !participant.hidden ? endTurnOf(participant) : participant,
     ),
     globalAnnotations: tickAnnotations(after.globalAnnotations, isGlobalReached),
   };
+}
+
+/** Fin del turno del portador: descuenta sus anotaciones, salvo las que recibió durante este mismo turno. */
+function endTurnOf(participant: Participant): Participant {
+  const annotations = participant.annotations.flatMap((annotation) =>
+    annotation.addedDuringOwnTurn ? [{ ...annotation, addedDuringOwnTurn: false }] : tickAnnotations([annotation]),
+  );
+  return { ...participant, annotations };
 }
 
 /** Descuenta una ronda a las anotaciones finitas que cumplan `shouldTick` y elimina las que llegan a 0. */
@@ -255,15 +263,16 @@ export function removeParticipant(encounter: Encounter, id: string): Encounter {
   });
 }
 
-export type NewAnnotation = Omit<Annotation, "anchor">;
+export type NewAnnotation = Omit<Annotation, "anchor" | "addedDuringOwnTurn">;
 
-/** Las anotaciones de un participante se cuentan en el turno de ese participante: no necesitan ancla. */
+/** Las anotaciones de un participante se cuentan en los turnos de ese participante: no necesitan ancla. */
 export function addAnnotation(encounter: Encounter, participantId: string, annotation: NewAnnotation): Encounter {
+  const added: Annotation = { ...annotation, anchor: null, addedDuringOwnTurn: encounter.currentId === participantId };
   return {
     ...encounter,
     participants: mapParticipant(encounter, participantId, (participant) => ({
       ...participant,
-      annotations: [...participant.annotations, { ...annotation, anchor: null }],
+      annotations: [...participant.annotations, added],
     })),
   };
 }
@@ -280,7 +289,7 @@ export function removeAnnotation(encounter: Encounter, participantId: string, an
 
 /** Las globales se anclan al turno actual: su duración se cuenta desde aquí. */
 export function addGlobalAnnotation(encounter: Encounter, annotation: NewAnnotation): Encounter {
-  const anchored: Annotation = { ...annotation, anchor: anchorAtCurrentTurn(encounter) };
+  const anchored: Annotation = { ...annotation, anchor: anchorAtCurrentTurn(encounter), addedDuringOwnTurn: false };
   return { ...encounter, globalAnnotations: [...encounter.globalAnnotations, anchored] };
 }
 

@@ -22,6 +22,11 @@ export interface Annotation {
    * y lo tienen siempre a `null`.
    */
   anchor: TurnAnchor | null;
+  /**
+   * Solo en anotaciones de participante: `true` si se añadió durante el turno de su propio portador. Ese turno
+   * ya estaba en marcha y no cuenta: al terminarlo se limpia la marca sin descontar.
+   */
+  addedDuringOwnTurn: boolean;
 }
 
 export interface Participant {

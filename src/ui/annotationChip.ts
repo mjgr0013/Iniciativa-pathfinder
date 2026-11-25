@@ -7,19 +7,26 @@ export function durationLabel(remainingRounds: number | null): string {
 }
 
 /** Cuándo termina una anotación finita, según el turno en que empezó. */
-export function expiryHint(remainingRounds: number | null, anchorName: string | null): string | null {
+/**
+ * Cuándo termina una anotación finita: las de participante, al terminar el turno de su portador;
+ * las globales, al llegar el turno en que se crearon (o al empezar la ronda, si no se sabe).
+ */
+export function expiryHint(remainingRounds: number | null, turnOwner: string | null, kind: "participant" | "global"): string | null {
   if (remainingRounds === null) return null;
-  const moment = anchorName ? `al llegar el turno de ${anchorName}` : "al empezar la ronda";
+  const moment = kind === "participant"
+    ? `al terminar el turno de ${turnOwner}`
+    : turnOwner ? `al llegar el turno de ${turnOwner}` : "al empezar la ronda";
   return remainingRounds === 1 ? `Expira ${moment}` : `Descuenta una ronda ${moment}`;
 }
 
-export function createAnnotationChip(annotation: Annotation, anchorName: string | null = null): HTMLElement {
+/** `turnOwner`: el portador (anotación de participante) o quien actuaba al crearla (global). */
+export function createAnnotationChip(annotation: Annotation, turnOwner: string | null, kind: "participant" | "global"): HTMLElement {
   const item = document.createElement("span");
   item.className = "annotation";
   item.dataset.annotationId = annotation.id;
   item.classList.toggle("is-infinite", annotation.remainingRounds === null);
   item.classList.toggle("is-expiring", annotation.remainingRounds === 1);
-  const hint = expiryHint(annotation.remainingRounds, anchorName);
+  const hint = expiryHint(annotation.remainingRounds, turnOwner, kind);
   if (hint) item.title = hint;
 
   const text = document.createElement("span");

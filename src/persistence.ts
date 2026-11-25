@@ -22,6 +22,7 @@ function normalizeAnchor(raw: unknown): TurnAnchor | null {
   return { participantId: raw.participantId, initiative, order: raw.order as number };
 }
 
+/** `keepAnchor` distingue las globales (con ancla) de las de participante (con marca de turno propio). */
 function normalizeAnnotations(value: unknown, idPrefix: string, keepAnchor: boolean): Annotation[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((raw, index): Annotation[] => {
@@ -34,6 +35,7 @@ function normalizeAnnotations(value: unknown, idPrefix: string, keepAnchor: bool
       text: raw.text,
       remainingRounds: infinite ? null : Math.max(1, Math.trunc(duration)),
       anchor: keepAnchor ? normalizeAnchor(raw.anchor) : null,
+      addedDuringOwnTurn: !keepAnchor && raw.addedDuringOwnTurn === true,
     }];
   });
 }

@@ -87,7 +87,7 @@ export function mountApp(store: EncounterStore): void {
     ui.activeCards = new Map(active.map((participant) => [participant.id, card(participant)]));
     el.hiddenList.replaceChildren(...hidden.map(card));
 
-    const globals = state.globalAnnotations.map((annotation) => createAnnotationChip(annotation, anchorName(annotation)));
+    const globals = state.globalAnnotations.map((annotation) => createAnnotationChip(annotation, anchorName(annotation), "global"));
     el.globalList.replaceChildren(
       ...(globals.length ? globals : [makeEmptyState("Los efectos que añadas aquí se aplicarán a todo el encuentro.")]),
     );
