@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#101510">
   <meta name="description" content="Rastreador de iniciativa y efectos para encuentros de Pathfinder.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23263220'/%3E%3Ctext x='16' y='21' text-anchor='middle' font-family='sans-serif' font-size='13' font-weight='700' fill='%23c4df78'%3EPF%3C/text%3E%3C/svg%3E">
   <title>Iniciativa Pathfinder</title>
 </head>
 <body>
@@ -38,16 +39,17 @@
             </div>
             <span class="heading-icon" aria-hidden="true">＋</span>
           </div>
-          <form id="participant-form" class="participant-form">
+          <form id="participant-form" class="participant-form" novalidate>
             <label>Nombre
-              <input id="participant-name" name="name" type="text" autocomplete="off" placeholder="Ej.: Explorador" required>
+              <input name="name" type="text" autocomplete="off" placeholder="Ej.: Explorador" maxlength="40" required>
             </label>
             <label>Iniciativa
-              <input id="participant-init" name="initiative" type="number" step="1" value="0" required>
+              <input name="initiative" type="number" step="1" value="0" required>
             </label>
+            <p class="form-error" role="alert" hidden></p>
             <div class="add-participant-actions">
               <button class="button button-primary" type="submit">Añadir activo <span aria-hidden="true">→</span></button>
-              <button id="add-hidden-participant" class="button button-secondary" type="button">Añadir oculto</button>
+              <button class="button button-secondary" type="submit" data-hidden="true">Añadir oculto</button>
             </div>
           </form>
         </section>
@@ -60,14 +62,15 @@
             </div>
             <span class="heading-icon heading-icon-muted" aria-hidden="true">✳</span>
           </div>
-          <div id="global-annotations" class="annotations" aria-live="polite"></div>
-          <form id="global-annotation-form" class="annotation-form global-annotation-form">
+          <div id="global-annotations" class="annotations"></div>
+          <form id="global-annotation-form" class="annotation-form global-annotation-form" novalidate>
             <label class="annotation-text-field">Anotación
-              <input name="text" type="text" placeholder="Ej.: niebla densa" required>
+              <input name="text" type="text" placeholder="Ej.: niebla densa" maxlength="80" required>
             </label>
             <label class="round-input">Rondas <span class="label-hint">0 = infinita</span>
               <input name="rounds" type="number" min="0" step="1" value="1" required>
             </label>
+            <p class="form-error" role="alert" hidden></p>
             <button class="button button-secondary button-full" type="submit">＋ Añadir anotación</button>
           </form>
         </section>
@@ -82,8 +85,8 @@
             </div>
             <span id="active-count" class="count"></span>
           </div>
-          <p class="section-description">Ordenados por iniciativa. Selecciona una tarjeta para cambiar el turno actual.</p>
-          <div id="active-list" class="participant-list" aria-live="polite"></div>
+          <p class="section-description">En orden de actuación: el turno actual va primero y el resto sigue por iniciativa. Selecciona una tarjeta para cambiar el turno actual.</p>
+          <div id="active-list" class="participant-list"></div>
         </section>
 
         <section class="hidden-section" aria-label="Participantes apartados">
@@ -91,7 +94,7 @@
             <span class="hidden-heading-icon" aria-hidden="true">◌</span>
             <span class="hidden-heading-copy"><strong>Participantes ocultos</strong><small>Fuera del orden de iniciativa</small></span>
             <span id="hidden-count" class="count">0</span>
-            <span id="hidden-chevron" class="chevron" aria-hidden="true">⌄</span>
+            <span class="chevron" aria-hidden="true">⌄</span>
           </button>
           <div id="hidden-list" class="participant-list hidden-list" hidden></div>
         </section>
@@ -109,45 +112,47 @@
     <button id="next-button" class="button button-primary dock-next" type="button">Siguiente turno <span aria-hidden="true">→</span></button>
   </div>
 
-  <dialog id="reset-dialog">
+  <dialog id="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-message">
     <form method="dialog" class="dialog-card">
-      <span class="dialog-mark" aria-hidden="true">↻</span>
-      <h2>¿Reiniciar el encuentro?</h2>
-      <p>Se borrarán los participantes añadidos y las anotaciones. Gorr, Lyra, Caedren, Kumiko, Adriana y Shary volverán con iniciativa 0.</p>
+      <span class="dialog-mark" aria-hidden="true">!</span>
+      <h2 id="confirm-title"></h2>
+      <p id="confirm-message"></p>
       <div class="dialog-actions">
-        <button class="button button-secondary" value="cancel">Cancelar</button>
-        <button id="confirm-reset" class="button button-danger" value="confirm">Reiniciar encuentro</button>
+        <button class="button button-secondary" value="cancel" autofocus>Cancelar</button>
+        <button id="confirm-accept" class="button button-danger" value="confirm"></button>
       </div>
     </form>
   </dialog>
 
   <template id="participant-template">
     <article class="participant-card">
+      <img class="participant-token" width="64" height="64" alt="" decoding="async" hidden>
       <div class="initiative-badge">
         <span>INI</span>
-        <button class="initiative-value inline-edit-trigger" type="button" aria-label="Editar iniciativa"></button>
+        <button class="initiative-value inline-edit-trigger" type="button" data-action="edit-initiative"></button>
       </div>
       <div class="participant-info">
         <div class="participant-title-row">
-          <button class="participant-name inline-edit-trigger" type="button" aria-label="Editar nombre"></button>
+          <button class="participant-name inline-edit-trigger" type="button" data-action="edit-name"></button>
           <span class="current-label" hidden>TURNO ACTUAL</span>
         </div>
         <div class="annotations"></div>
-        <form class="annotation-form participant-annotation-form" hidden>
+        <form class="annotation-form participant-annotation-form" novalidate hidden>
           <label class="annotation-text-field">Anotación
-            <input name="text" type="text" placeholder="Ej.: ralentizado" required>
+            <input name="text" type="text" placeholder="Ej.: ralentizado" maxlength="80" required>
           </label>
           <label class="round-input">Rondas <span class="label-hint">0 = infinita</span>
             <input name="rounds" type="number" min="0" step="1" value="1" required>
           </label>
           <button class="button button-secondary button-small" type="submit">Guardar</button>
+          <p class="form-error" role="alert" hidden></p>
         </form>
       </div>
       <div class="participant-actions">
-        <button class="button button-small add-annotation-button" type="button" aria-expanded="false">＋ Efecto</button>
-        <button class="button button-small hide-button" type="button">Ocultar</button>
-        <button class="button button-small restore-button" type="button" hidden>Restaurar</button>
-        <button class="button button-small remove-button" type="button" aria-label="Eliminar participante">Eliminar</button>
+        <button class="button button-small" type="button" data-action="toggle-annotation-form" aria-expanded="false">＋ Efecto</button>
+        <button class="button button-small" type="button" data-action="hide">Ocultar</button>
+        <button class="button button-small" type="button" data-action="restore">Restaurar</button>
+        <button class="button button-small" type="button" data-action="remove">Eliminar</button>
       </div>
     </article>
   </template>
