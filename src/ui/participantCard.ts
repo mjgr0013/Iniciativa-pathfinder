@@ -2,6 +2,7 @@ import { canRemove } from "../domain/encounter.ts";
 import type { Participant } from "../domain/types.ts";
 import { createAnnotationChip } from "./annotationChip.ts";
 import { requiredElement } from "./dom.ts";
+import { initials, tokenTone } from "./initials.ts";
 import { PRESET_TOKENS } from "./tokens.ts";
 
 export interface CardOptions {
@@ -16,12 +17,7 @@ export function createParticipantCard(template: HTMLTemplateElement, participant
   const { hidden } = participant;
   card.dataset.id = participant.id;
 
-  if (participant.presetId) {
-    const token = requiredElement<HTMLImageElement>(".participant-token", card);
-    token.src = PRESET_TOKENS[participant.presetId];
-    token.hidden = false;
-    card.classList.add("has-token");
-  }
+  renderToken(requiredElement<HTMLElement>(".participant-token", card), participant);
 
   const initiative = action(card, "edit-initiative");
   initiative.textContent = String(participant.initiative);
@@ -46,6 +42,24 @@ export function createParticipantCard(template: HTMLTemplateElement, participant
 
   setCardCurrent(card, options.isCurrent);
   return card;
+}
+
+/** Retrato para los predeterminados; para el resto, un recuadro del mismo tamaño con sus iniciales. */
+function renderToken(token: HTMLElement, participant: Participant): void {
+  if (participant.presetId) {
+    const image = document.createElement("img");
+    image.src = PRESET_TOKENS[participant.presetId];
+    image.alt = "";
+    image.width = 64;
+    image.height = 64;
+    image.decoding = "async";
+    token.replaceChildren(image);
+    return;
+  }
+  const text = initials(participant.name);
+  token.classList.add("token-initials", `token-tone-${tokenTone(participant.name)}`);
+  token.dataset.length = String(Math.min(text.length, 3));
+  token.textContent = text;
 }
 
 export function setCardCurrent(card: HTMLElement, isCurrent: boolean): void {

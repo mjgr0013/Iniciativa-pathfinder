@@ -193,5 +193,6 @@ Como director/a de juego, quiero reiniciar el encuentro para empezar de nuevo si
 Comportamientos presentes en la aplicación que amplían esta especificación:
 
 - **Anotaciones globales:** anotaciones del encuentro no asociadas a ningún participante; descuentan duración al completar cada ronda igual que las de los participantes activos.
+- **Retratos:** los participantes predeterminados muestran su retrato; el resto, un recuadro del mismo tamaño con sus iniciales (los números se conservan: «Orco 2» → «O2») sobre un color estable según el nombre.
 - **Añadir oculto:** un participante puede añadirse directamente a la sección de ocultos.
 - **Cambiar el turno manualmente:** con doble clic en una tarjeta activa (o pulsación larga en pantallas táctiles), y tras confirmarlo en un diálogo, ese participante pasa a ser el actual, sin cambiar la ronda ni descontar anotaciones. Si se cancela, el turno no cambia. Un clic simple no cambia el turno, para evitar cambios accidentales.
