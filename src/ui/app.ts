@@ -209,13 +209,7 @@ export function mountApp(store: EncounterStore): void {
     const participantId = card?.dataset.id;
     const button = target.closest<HTMLButtonElement>("button[data-action]");
 
-    if (!button) {
-      // Clic en una zona libre de una tarjeta activa: pasa a ser el turno actual.
-      if (card && participantId && ui.activeCards.has(participantId) && !target.closest("input, form")) {
-        actions().setCurrentParticipant(participantId);
-      }
-      return;
-    }
+    if (!button) return;
 
     if (button.dataset.action === "remove-annotation") {
       void removeAnnotation(button.closest<HTMLElement>(".annotation")!, participantId);
@@ -231,6 +225,62 @@ export function mountApp(store: EncounterStore): void {
       case "restore": return actions().restoreParticipant(participantId);
       case "remove": return void removeParticipant(participantId);
     }
+  });
+
+  // Dar el turno a mano: doble clic (escritorio) o pulsación larga (táctil) en una zona libre de una tarjeta activa.
+  // Un clic simple no hace nada, para evitar cambios de turno accidentales.
+
+  /** Id del participante activo cuya tarjeta se ha tocado fuera de botones, campos y anotaciones. */
+  function turnTargetAt(target: EventTarget | null): string | null {
+    if (!(target instanceof Element) || target.closest("button, input, form, .annotation")) return null;
+    const id = target.closest<HTMLElement>(".participant-card")?.dataset.id;
+    return id && ui.activeCards.has(id) ? id : null;
+  }
+
+  // Si el primer clic del doble clic cayó en un control (p. ej. «＋ Efecto», que al abrir el formulario
+  // desplaza los botones), el segundo puede caer en zona libre: eso no debe dar el turno.
+  let doubleClickStartedOnControl = false;
+  el.activeList.addEventListener("mousedown", (event) => {
+    if (event.detail === 1) doubleClickStartedOnControl = turnTargetAt(event.target) === null;
+  });
+  el.activeList.addEventListener("dblclick", (event) => {
+    const id = turnTargetAt(event.target);
+    if (id && !doubleClickStartedOnControl) actions().setCurrentParticipant(id);
+  });
+
+  const LONG_PRESS_MS = 500;
+  const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
+  let longPress: { timer: number; x: number; y: number } | null = null;
+  let lastPointerType = "mouse";
+  const cancelLongPress = () => {
+    if (longPress) window.clearTimeout(longPress.timer);
+    longPress = null;
+  };
+
+  el.activeList.addEventListener("pointerdown", (event) => {
+    lastPointerType = event.pointerType;
+    cancelLongPress();
+    const id = turnTargetAt(event.target);
+    if (event.pointerType === "mouse" || !id) return;
+    longPress = {
+      x: event.clientX,
+      y: event.clientY,
+      timer: window.setTimeout(() => {
+        longPress = null;
+        navigator.vibrate?.(15);
+        actions().setCurrentParticipant(id);
+      }, LONG_PRESS_MS),
+    };
+  });
+  el.activeList.addEventListener("pointermove", (event) => {
+    if (longPress && Math.hypot(event.clientX - longPress.x, event.clientY - longPress.y) > LONG_PRESS_MOVE_TOLERANCE_PX) {
+      cancelLongPress();
+    }
+  });
+  ["pointerup", "pointercancel", "pointerleave"].forEach((type) => el.activeList.addEventListener(type, cancelLongPress));
+  // En táctil, la pulsación larga abriría el menú contextual del navegador sobre la tarjeta.
+  el.activeList.addEventListener("contextmenu", (event) => {
+    if (lastPointerType !== "mouse" && turnTargetAt(event.target)) event.preventDefault();
   });
 
   el.workspace.addEventListener("submit", (event) => {

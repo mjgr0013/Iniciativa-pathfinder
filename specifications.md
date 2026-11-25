@@ -194,4 +194,4 @@ Comportamientos presentes en la aplicación que amplían esta especificación:
 
 - **Anotaciones globales:** anotaciones del encuentro no asociadas a ningún participante; descuentan duración al completar cada ronda igual que las de los participantes activos.
 - **Añadir oculto:** un participante puede añadirse directamente a la sección de ocultos.
-- **Cambiar el turno manualmente:** al seleccionar una tarjeta activa, ese participante pasa a ser el actual (sin cambiar la ronda).
+- **Cambiar el turno manualmente:** con doble clic en una tarjeta activa (o pulsación larga en pantallas táctiles), ese participante pasa a ser el actual, sin cambiar la ronda. Un clic simple no cambia el turno, para evitar cambios accidentales.

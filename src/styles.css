@@ -98,6 +98,9 @@ input[aria-invalid="true"] { border-color: var(--danger); }
 .round-divider::before, .round-divider::after { content: ""; flex: 1; border-top: 1px dashed var(--border-strong); }
 .participant-card { position: relative; display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; scroll-margin-bottom: 96px; align-items: center; gap: 12px; min-width: 0; padding: 12px 14px; border: 1px solid var(--border); border-radius: 14px; background: linear-gradient(110deg, rgba(28, 36, 27, .98), rgba(23, 29, 23, .98)); transition: border-color .18s ease, background .18s ease, transform .18s ease; }
 .participant-card.has-token { grid-template-columns: 60px 64px minmax(0, 1fr) auto; }
+/* Doble clic y pulsación larga dan el turno: evita que seleccionen texto o abran el menú de iOS. */
+#active-list .participant-card { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+#active-list .participant-card input { user-select: text; -webkit-user-select: text; }
 .participant-card:hover { border-color: #4a5942; transform: translateY(-1px); }
 .participant-card.is-current { border-color: var(--current); background: linear-gradient(110deg, #2d2b20, #22251d); box-shadow: inset 3px 0 0 var(--current), 0 6px 24px rgba(0, 0, 0, .16); }
 .participant-token { width: 60px; height: 60px; display: block; flex: 0 0 auto; border: 2px solid #b8c486; border-radius: 14px; background: #202820; object-fit: cover; box-shadow: 0 4px 12px rgba(0, 0, 0, .32); }
