@@ -176,7 +176,7 @@ Como director/a de juego, quiero reiniciar el encuentro para empezar de nuevo si
 
 - **Encuentro:** lista de participantes, número de ronda actual, participante actual y lista de anotaciones globales.
 - **Participante:** identificador, nombre, valor numérico de iniciativa, orden de inserción (para desempates), estado visible u oculto, personaje predeterminado al que corresponde (si lo es) y lista de anotaciones.
-- **Anotación:** identificador, texto y duración restante en rondas o duración infinita. Las de participante indican además si aún esperan su primer turno afectado; las globales guardan el turno en que se crearon (participante, iniciativa y orden).
+- **Anotación:** identificador, texto y duración restante en rondas o duración infinita. Las de participante indican además si aún esperan su primer turno afectado; las globales guardan el turno en que se crearon (participante, nombre, iniciativa y orden).
 
 ## Fuera de alcance
 
@@ -208,7 +208,7 @@ Como director/a de juego, quiero reiniciar el encuentro para empezar de nuevo si
 
 Comportamientos presentes en la aplicación que amplían esta especificación:
 
-- **Anotaciones globales:** anotaciones del encuentro no asociadas a ningún participante; al no tener portador, su duración se cuenta desde el turno en que se crean (descuentan cada vez que vuelve ese turno).
+- **Anotaciones globales:** anotaciones del encuentro no asociadas a ningún participante; al no tener portador, su duración se cuenta desde el turno en que se crean (descuentan cada vez que vuelve ese turno). Las finitas muestran «hasta» seguido del retrato o las iniciales del participante en cuyo turno descuentan y expiran, aunque se haya ocultado o eliminado.
 - **Retratos:** los participantes predeterminados muestran su retrato; el resto, un recuadro del mismo tamaño con sus iniciales (los números se conservan: «Orco 2» → «O2») sobre un color estable según el nombre.
 - **Añadir oculto:** un participante puede añadirse directamente a la sección de ocultos.
 - **Cambiar el turno manualmente:** con doble clic en una tarjeta activa (o pulsación larga en pantallas táctiles), y tras confirmarlo en un diálogo, ese participante pasa a ser el actual, sin cambiar la ronda ni descontar anotaciones. Si se cancela, el turno no cambia. Un clic simple no cambia el turno, para evitar cambios accidentales.

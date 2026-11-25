@@ -19,7 +19,7 @@ function normalizeAnchor(raw: unknown): TurnAnchor | null {
   if (!isObject(raw) || typeof raw.participantId !== "string") return null;
   const initiative = Number(raw.initiative);
   if (!Number.isFinite(initiative) || !Number.isInteger(raw.order)) return null;
-  return { participantId: raw.participantId, initiative, order: raw.order as number };
+  return { participantId: raw.participantId, name: typeof raw.name === "string" ? raw.name : "", initiative, order: raw.order as number };
 }
 
 /** `keepAnchor` distingue las globales (con ancla) de las de participante (con marca de turno propio). */

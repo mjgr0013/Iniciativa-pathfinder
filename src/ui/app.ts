@@ -4,6 +4,7 @@ import type { Annotation, Encounter } from "../domain/types.ts";
 import { parseAnnotationText, parseInitiative, parseName, parseRounds } from "../domain/validation.ts";
 import type { EncounterState, EncounterStore } from "../store.ts";
 import { createAnnotationChip } from "./annotationChip.ts";
+import type { TokenOwner } from "./tokens.ts";
 import { confirmAction } from "./confirmDialog.ts";
 import { animateOut, formInput, makeEmptyState, prefersReducedMotion, requiredElement, setFormError } from "./dom.ts";
 import { startInlineEdit } from "./inlineEdit.ts";
@@ -76,9 +77,14 @@ export function mountApp(store: EncounterStore): void {
     el.activeCount.textContent = `${active.length} ${active.length === 1 ? "activo" : "activos"}`;
     el.hiddenCount.textContent = String(hidden.length);
 
-    /** Nombre del participante en cuyo turno descuenta una anotación global (si sigue en el encuentro). */
-    const anchorName = (annotation: Annotation): string | null =>
-      (annotation.anchor && state.participants.find((participant) => participant.id === annotation.anchor!.participantId)?.name) ?? null;
+    /** Participante en cuyo turno descuenta una anotación global; si ya no está, el nombre que tenía. */
+    const turnOwner = (annotation: Annotation): TokenOwner | null => {
+      const { anchor } = annotation;
+      if (!anchor) return null;
+      const participant = state.participants.find((p) => p.id === anchor.participantId);
+      if (participant) return participant;
+      return anchor.name ? { name: anchor.name, presetId: null } : null;
+    };
     const card = (participant: (typeof active)[number]) =>
       createParticipantCard(el.template, participant, {
         isCurrent: !participant.hidden && participant.id === state.currentId,
@@ -87,7 +93,7 @@ export function mountApp(store: EncounterStore): void {
     ui.activeCards = new Map(active.map((participant) => [participant.id, card(participant)]));
     el.hiddenList.replaceChildren(...hidden.map(card));
 
-    const globals = state.globalAnnotations.map((annotation) => createAnnotationChip(annotation, anchorName(annotation), "global"));
+    const globals = state.globalAnnotations.map((annotation) => createAnnotationChip(annotation, turnOwner(annotation), "global"));
     el.globalList.replaceChildren(
       ...(globals.length ? globals : [makeEmptyState("Los efectos que añadas aquí se aplicarán a todo el encuentro.")]),
     );

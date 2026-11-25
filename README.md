@@ -10,7 +10,7 @@ Aplicación web (TypeScript + Vite, sin backend) para gestionar iniciativa, rond
 - Nombre e iniciativa se editan en línea pulsando sobre ellos.
 - Ocultar o eliminar al participante actual cuenta como terminar su turno.
 - Las anotaciones (de participante o globales) duran las rondas indicadas; `0` significa infinita.
-- Cada ronda de una anotación de participante cubre un turno de ese participante, empezando por el primero tras añadirla; se quita justo antes del turno siguiente al último afectado. Las globales, al no tener portador, cuentan desde el turno en que se crean.
+- Cada ronda de una anotación de participante cubre un turno de ese participante, empezando por el primero tras añadirla; se quita justo antes del turno siguiente al último afectado. Las globales, al no tener portador, cuentan desde el turno en que se crean y muestran el retrato o las iniciales de ese participante («hasta [token]»).
 - El encuentro se guarda en `localStorage`; los datos de versiones anteriores se migran automáticamente.
 
 ## Estructura

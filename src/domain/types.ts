@@ -7,6 +7,8 @@ export type PresetId = (typeof PRESET_IDS)[number];
  */
 export interface TurnAnchor {
   participantId: string;
+  /** Nombre al crear la anotación, para seguir mostrando de quién era el turno si se elimina. */
+  name: string;
   initiative: number;
   order: number;
 }

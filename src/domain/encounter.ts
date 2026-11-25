@@ -145,7 +145,7 @@ function anchorSlot(encounter: Encounter, anchor: TurnAnchor): Slot {
 
 function anchorAtCurrentTurn(encounter: Encounter): TurnAnchor | null {
   const current = getCurrent(encounter);
-  return current ? { participantId: current.id, initiative: current.initiative, order: current.order } : null;
+  return current ? { participantId: current.id, name: current.name, initiative: current.initiative, order: current.order } : null;
 }
 
 /**

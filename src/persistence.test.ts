@@ -49,7 +49,7 @@ describe("persistencia", () => {
   });
 
   it("conserva el ancla de las globales, descarta las mal formadas e ignora la de las de participante", () => {
-    const anchor = { participantId: "a", initiative: 12, order: 0 };
+    const anchor = { participantId: "a", name: "A", initiative: 12, order: 0 };
     const migrated = normalizeEncounter({
       schemaVersion: 5,
       participants: [{ id: "a", name: "A", initiative: 12, order: 0, annotations: [{ id: "p", text: "p", remainingRounds: 2, anchor }] }],
@@ -71,6 +71,15 @@ describe("persistencia", () => {
       ] }],
     });
     expect(migrated?.participants[0]!.annotations.map((annotation) => annotation.awaitingFirstTurn)).toEqual([true, false]);
+  });
+
+  it("acepta anclas sin nombre (guardadas antes de mostrar el token en las globales)", () => {
+    const migrated = normalizeEncounter({
+      schemaVersion: 5,
+      participants: [],
+      globalAnnotations: [{ id: "x", text: "x", remainingRounds: 1, anchor: { participantId: "a", initiative: 3, order: 1 } }],
+    });
+    expect(migrated?.globalAnnotations[0]!.anchor).toEqual({ participantId: "a", name: "", initiative: 3, order: 1 });
   });
 
   it("añade a Shary en datos anteriores al esquema 3", () => {
