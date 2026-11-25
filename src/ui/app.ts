@@ -76,14 +76,13 @@ export function mountApp(store: EncounterStore): void {
     el.activeCount.textContent = `${active.length} ${active.length === 1 ? "activo" : "activos"}`;
     el.hiddenCount.textContent = String(hidden.length);
 
-    /** Nombre del participante en cuyo turno empezó la anotación (si sigue en el encuentro). */
+    /** Nombre del participante en cuyo turno descuenta una anotación global (si sigue en el encuentro). */
     const anchorName = (annotation: Annotation): string | null =>
       (annotation.anchor && state.participants.find((participant) => participant.id === annotation.anchor!.participantId)?.name) ?? null;
     const card = (participant: (typeof active)[number]) =>
       createParticipantCard(el.template, participant, {
         isCurrent: !participant.hidden && participant.id === state.currentId,
         annotationFormOpen: ui.openAnnotationForms.has(participant.id),
-        anchorName,
       });
     ui.activeCards = new Map(active.map((participant) => [participant.id, card(participant)]));
     el.hiddenList.replaceChildren(...hidden.map(card));

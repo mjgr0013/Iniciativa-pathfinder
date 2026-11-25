@@ -84,9 +84,9 @@ Como director/a de juego, quiero añadir anotaciones a cada participante con una
 - Cada participante puede tener cero o más anotaciones.
 - Una anotación incluye un texto y una duración: un número de rondas o duración infinita.
 - Las anotaciones con duración finita muestran cuántas rondas les quedan.
-- La duración se cuenta desde el turno en que se añade la anotación: cada vez que el turno vuelve al participante que estaba actuando al crearla, las anotaciones finitas de los participantes activos reducen su duración restante en una ronda.
-- Una anotación de 1 ronda añadida en el turno del último participante sigue vigente al empezar la ronda siguiente y expira al llegar de nuevo el turno de ese participante.
-- Si el participante en cuyo turno empezó la anotación se oculta o elimina, se toma su posición en el orden de iniciativa para contar las rondas.
+- La duración se cuenta en el turno de quien sufre la anotación: cada vez que empieza el turno del participante, sus anotaciones finitas reducen su duración restante en una ronda, y las que llegan a cero expiran en ese momento.
+- Ejemplo: en el turno de «Personaje 1» se añade una anotación de 1 ronda a «Personaje 1» y otra de 2 rondas a «Personaje 2». La de «Personaje 2» pasa a «Última ronda» al empezar su turno; al volver el turno a «Personaje 1» expira la suya, y la de «Personaje 2» expira al llegar de nuevo su turno.
+- Una anotación añadida en el turno del último participante no expira al empezar la ronda siguiente, sino al llegar el turno de quien la sufre.
 - Una anotación finita se elimina automáticamente cuando su duración llega a cero.
 - Una anotación infinita permanece hasta que el director de juego la quite manualmente.
 - El director de juego puede quitar manualmente cualquier anotación antes de que expire.
@@ -128,7 +128,7 @@ Como director/a de juego, quiero reiniciar el encuentro para empezar de nuevo si
 - **FR-006:** La ronda debe comenzar en 1 y aumentar cuando todos los participantes activos hayan actuado y el turno vuelva al primero.
 - **FR-007:** La aplicación debe permitir añadir varias anotaciones a cada participante.
 - **FR-008:** Cada anotación debe tener texto y una duración finita expresada en rondas o duración infinita.
-- **FR-009:** Las anotaciones finitas de participantes activos deben reducir su duración cada vez que el turno vuelve al punto de la iniciativa en que se crearon, y eliminarse al llegar a cero.
+- **FR-009:** Las anotaciones finitas de participantes activos deben reducir su duración al empezar el turno de ese participante, y eliminarse al llegar a cero.
 - **FR-010:** El usuario debe poder eliminar manualmente anotaciones, incluidas las infinitas.
 - **FR-011:** La aplicación debe permitir ocultar participantes sin eliminarlos y mostrarlos en una sección separada, al final y colapsada por defecto.
 - **FR-012:** Los participantes ocultos no deben participar en el orden de turnos ni en el cálculo de fin de ronda; debe ser posible restaurarlos.
@@ -182,7 +182,7 @@ Como director/a de juego, quiero reiniciar el encuentro para empezar de nuevo si
 - El avance del turno rota el orden activo para mantener al participante actual en la primera posición.
 - Una ronda se considera completada cuando todos los participantes activos han actuado y el turno vuelve al primero.
 - Ocultar o eliminar al participante actual cuenta como terminar su turno; si era el último de la ronda, la ronda se completa. Si no queda ningún otro participante activo, la ronda no avanza.
-- La duración de una anotación finita se cuenta en rondas completas desde el turno en que se crea: descuenta una ronda cada vez que el turno llega al participante que actuaba al crearla y expira al empezar ese turno cuando llega a cero. Las infinitas no expiran automáticamente. Cambiar el turno a mano no descuenta.
+- La duración de una anotación finita de participante se cuenta en el turno de ese participante: descuenta una ronda al empezar su turno y expira en ese momento cuando llega a cero. Las globales, que no tienen portador, se cuentan desde el turno en que se crean (si quien actuaba entonces se oculta o elimina, cuenta su posición en la iniciativa). Las infinitas no expiran automáticamente. Cambiar el turno a mano no descuenta.
 - Los participantes ocultos permanecen guardados en el estado del encuentro, en una sección colapsada al final, y no actúan hasta que se restauren.
 - Reiniciar requiere confirmación y restablece todos los datos del encuentro a los participantes predeterminados.
 - La lista activa se muestra rotada a partir del participante actual; un separador indica dónde empieza la siguiente ronda (el participante de mayor iniciativa).
@@ -194,7 +194,7 @@ Como director/a de juego, quiero reiniciar el encuentro para empezar de nuevo si
 
 Comportamientos presentes en la aplicación que amplían esta especificación:
 
-- **Anotaciones globales:** anotaciones del encuentro no asociadas a ningún participante; su duración se cuenta igual que la de las anotaciones de los participantes, desde el turno en que se crean.
+- **Anotaciones globales:** anotaciones del encuentro no asociadas a ningún participante; al no tener portador, su duración se cuenta desde el turno en que se crean (descuentan cada vez que vuelve ese turno).
 - **Retratos:** los participantes predeterminados muestran su retrato; el resto, un recuadro del mismo tamaño con sus iniciales (los números se conservan: «Orco 2» → «O2») sobre un color estable según el nombre.
 - **Añadir oculto:** un participante puede añadirse directamente a la sección de ocultos.
 - **Cambiar el turno manualmente:** con doble clic en una tarjeta activa (o pulsación larga en pantallas táctiles), y tras confirmarlo en un diálogo, ese participante pasa a ser el actual, sin cambiar la ronda ni descontar anotaciones. Si se cancela, el turno no cambia. Un clic simple no cambia el turno, para evitar cambios accidentales.

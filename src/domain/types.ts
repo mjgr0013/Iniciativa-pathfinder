@@ -17,8 +17,9 @@ export interface Annotation {
   /** Rondas restantes; `null` significa duración infinita. */
   remainingRounds: number | null;
   /**
-   * Las rondas se cuentan desde aquí: cada vez que el turno llega a este punto se descuenta una,
-   * y al llegar a 0 la anotación expira al empezar ese turno. `null` = inicio de ronda.
+   * Solo en anotaciones globales: las rondas se cuentan desde aquí (cada vez que el turno llega a este punto
+   * se descuenta una). `null` = inicio de ronda. Las de un participante se cuentan en el turno de su portador
+   * y lo tienen siempre a `null`.
    */
   anchor: TurnAnchor | null;
 }

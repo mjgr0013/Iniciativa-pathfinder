@@ -22,7 +22,7 @@ function normalizeAnchor(raw: unknown): TurnAnchor | null {
   return { participantId: raw.participantId, initiative, order: raw.order as number };
 }
 
-function normalizeAnnotations(value: unknown, idPrefix: string): Annotation[] {
+function normalizeAnnotations(value: unknown, idPrefix: string, keepAnchor: boolean): Annotation[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((raw, index): Annotation[] => {
     if (!isObject(raw) || typeof raw.text !== "string") return [];
@@ -33,7 +33,7 @@ function normalizeAnnotations(value: unknown, idPrefix: string): Annotation[] {
       id: typeof raw.id === "string" ? raw.id : `${idPrefix}-annotation-${index}`,
       text: raw.text,
       remainingRounds: infinite ? null : Math.max(1, Math.trunc(duration)),
-      anchor: normalizeAnchor(raw.anchor),
+      anchor: keepAnchor ? normalizeAnchor(raw.anchor) : null,
     }];
   });
 }
@@ -58,7 +58,8 @@ function normalizeParticipant(raw: unknown, index: number): Participant | null {
     name: raw.name,
     initiative: Number.isFinite(initiative) ? initiative : 0,
     hidden: raw.hidden === true,
-    annotations: normalizeAnnotations(raw.annotations, raw.id),
+    // Las anotaciones de participante se cuentan en el turno de su portador: el ancla no aplica.
+    annotations: normalizeAnnotations(raw.annotations, raw.id, false),
     order: Number.isInteger(raw.order) ? (raw.order as number) : index,
     presetId: inferPresetId(raw, raw.name),
   };
@@ -92,7 +93,7 @@ export function normalizeEncounter(raw: unknown): Encounter | null {
     round: Number.isInteger(raw.round) ? Math.max(1, raw.round as number) : 1,
     participants,
     currentId: active.some((participant) => participant.id === savedCurrentId) ? savedCurrentId : active[0]?.id ?? null,
-    globalAnnotations: normalizeAnnotations(raw.globalAnnotations, "global"),
+    globalAnnotations: normalizeAnnotations(raw.globalAnnotations, "global", true),
   };
 }
 
