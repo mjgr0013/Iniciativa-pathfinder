@@ -84,7 +84,9 @@ Como director/a de juego, quiero añadir anotaciones a cada participante con una
 - Cada participante puede tener cero o más anotaciones.
 - Una anotación incluye un texto y una duración: un número de rondas o duración infinita.
 - Las anotaciones con duración finita muestran cuántas rondas les quedan.
-- Al completarse una ronda, las anotaciones finitas de los participantes activos reducen su duración restante en una ronda.
+- La duración se cuenta desde el turno en que se añade la anotación: cada vez que el turno vuelve al participante que estaba actuando al crearla, las anotaciones finitas de los participantes activos reducen su duración restante en una ronda.
+- Una anotación de 1 ronda añadida en el turno del último participante sigue vigente al empezar la ronda siguiente y expira al llegar de nuevo el turno de ese participante.
+- Si el participante en cuyo turno empezó la anotación se oculta o elimina, se toma su posición en el orden de iniciativa para contar las rondas.
 - Una anotación finita se elimina automáticamente cuando su duración llega a cero.
 - Una anotación infinita permanece hasta que el director de juego la quite manualmente.
 - El director de juego puede quitar manualmente cualquier anotación antes de que expire.
@@ -101,7 +103,7 @@ Como director/a de juego, quiero ocultar a un participante que ha muerto para re
 - El usuario puede expandir la sección para revisar los participantes ocultos y volver a mostrarlos.
 - Los participantes ocultos no reciben turnos ni afectan al avance de la ronda.
 - Si se oculta al participante actual, el siguiente participante activo pasa a ser el actual; si no quedan participantes activos, no hay turno actual.
-- Si el participante actual es el último de la ronda y se oculta o elimina, equivale a pulsar el botón de avanzar: la ronda se completa, las anotaciones finitas de los participantes que siguen activos descuentan una ronda y el turno pasa al primero. Las anotaciones del participante retirado no se descuentan.
+- Si el participante actual es el último de la ronda y se oculta o elimina, equivale a pulsar el botón de avanzar: la ronda se completa, el turno pasa al primero y las anotaciones descuentan como si se hubiera avanzado. Las anotaciones del participante retirado no se descuentan.
 - Si se vuelve a mostrar un participante, se incorpora de nuevo al orden activo según su iniciativa y las reglas de desempate.
 - Ocultar a un participante no elimina sus anotaciones ni sus datos.
 
@@ -126,7 +128,7 @@ Como director/a de juego, quiero reiniciar el encuentro para empezar de nuevo si
 - **FR-006:** La ronda debe comenzar en 1 y aumentar cuando todos los participantes activos hayan actuado y el turno vuelva al primero.
 - **FR-007:** La aplicación debe permitir añadir varias anotaciones a cada participante.
 - **FR-008:** Cada anotación debe tener texto y una duración finita expresada en rondas o duración infinita.
-- **FR-009:** Las anotaciones finitas de participantes activos deben reducir su duración al completar cada ronda y eliminarse al llegar a cero.
+- **FR-009:** Las anotaciones finitas de participantes activos deben reducir su duración cada vez que el turno vuelve al punto de la iniciativa en que se crearon, y eliminarse al llegar a cero.
 - **FR-010:** El usuario debe poder eliminar manualmente anotaciones, incluidas las infinitas.
 - **FR-011:** La aplicación debe permitir ocultar participantes sin eliminarlos y mostrarlos en una sección separada, al final y colapsada por defecto.
 - **FR-012:** Los participantes ocultos no deben participar en el orden de turnos ni en el cálculo de fin de ronda; debe ser posible restaurarlos.
@@ -180,7 +182,7 @@ Como director/a de juego, quiero reiniciar el encuentro para empezar de nuevo si
 - El avance del turno rota el orden activo para mantener al participante actual en la primera posición.
 - Una ronda se considera completada cuando todos los participantes activos han actuado y el turno vuelve al primero.
 - Ocultar o eliminar al participante actual cuenta como terminar su turno; si era el último de la ronda, la ronda se completa. Si no queda ningún otro participante activo, la ronda no avanza.
-- Las anotaciones finitas de participantes activos descuentan duración al completar una ronda; las infinitas no expiran automáticamente.
+- La duración de una anotación finita se cuenta en rondas completas desde el turno en que se crea: descuenta una ronda cada vez que el turno llega al participante que actuaba al crearla y expira al empezar ese turno cuando llega a cero. Las infinitas no expiran automáticamente. Cambiar el turno a mano no descuenta.
 - Los participantes ocultos permanecen guardados en el estado del encuentro, en una sección colapsada al final, y no actúan hasta que se restauren.
 - Reiniciar requiere confirmación y restablece todos los datos del encuentro a los participantes predeterminados.
 - La lista activa se muestra rotada a partir del participante actual; un separador indica dónde empieza la siguiente ronda (el participante de mayor iniciativa).
@@ -192,7 +194,7 @@ Como director/a de juego, quiero reiniciar el encuentro para empezar de nuevo si
 
 Comportamientos presentes en la aplicación que amplían esta especificación:
 
-- **Anotaciones globales:** anotaciones del encuentro no asociadas a ningún participante; descuentan duración al completar cada ronda igual que las de los participantes activos.
+- **Anotaciones globales:** anotaciones del encuentro no asociadas a ningún participante; su duración se cuenta igual que la de las anotaciones de los participantes, desde el turno en que se crean.
 - **Retratos:** los participantes predeterminados muestran su retrato; el resto, un recuadro del mismo tamaño con sus iniciales (los números se conservan: «Orco 2» → «O2») sobre un color estable según el nombre.
 - **Añadir oculto:** un participante puede añadirse directamente a la sección de ocultos.
 - **Cambiar el turno manualmente:** con doble clic en una tarjeta activa (o pulsación larga en pantallas táctiles), y tras confirmarlo en un diálogo, ese participante pasa a ser el actual, sin cambiar la ronda ni descontar anotaciones. Si se cancela, el turno no cambia. Un clic simple no cambia el turno, para evitar cambios accidentales.

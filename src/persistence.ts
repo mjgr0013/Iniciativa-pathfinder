@@ -1,8 +1,8 @@
 import { createDefaultEncounter, presetParticipant, PRESET_NAMES, sortActive } from "./domain/encounter.ts";
-import { PRESET_IDS, type Annotation, type Encounter, type Participant, type PresetId } from "./domain/types.ts";
+import { PRESET_IDS, type Annotation, type Encounter, type Participant, type PresetId, type TurnAnchor } from "./domain/types.ts";
 
 export const STORAGE_KEY = "iniciativa-pathfinder-state-v1";
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 type StorageLike = Pick<Storage, "getItem" | "setItem">;
 type Raw = Record<string, unknown>;
@@ -12,6 +12,14 @@ const isObject = (value: unknown): value is Raw => typeof value === "object" && 
 function presetByName(name: string): PresetId | null {
   const lower = name.trim().toLocaleLowerCase("es");
   return PRESET_IDS.find((id) => PRESET_NAMES[id].toLocaleLowerCase("es") === lower) ?? null;
+}
+
+/** Esquemas < 5 no guardaban el ancla: esas anotaciones descuentan al empezar cada ronda, como entonces. */
+function normalizeAnchor(raw: unknown): TurnAnchor | null {
+  if (!isObject(raw) || typeof raw.participantId !== "string") return null;
+  const initiative = Number(raw.initiative);
+  if (!Number.isFinite(initiative) || !Number.isInteger(raw.order)) return null;
+  return { participantId: raw.participantId, initiative, order: raw.order as number };
 }
 
 function normalizeAnnotations(value: unknown, idPrefix: string): Annotation[] {
@@ -25,6 +33,7 @@ function normalizeAnnotations(value: unknown, idPrefix: string): Annotation[] {
       id: typeof raw.id === "string" ? raw.id : `${idPrefix}-annotation-${index}`,
       text: raw.text,
       remainingRounds: infinite ? null : Math.max(1, Math.trunc(duration)),
+      anchor: normalizeAnchor(raw.anchor),
     }];
   });
 }

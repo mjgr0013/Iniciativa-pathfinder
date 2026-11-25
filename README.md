@@ -7,7 +7,7 @@ Aplicación web (TypeScript + Vite, sin backend) para gestionar iniciativa, rond
 - Incluye por defecto a Gorr, Lyra, Caedren, Kumiko, Adriana y Shary (no se pueden eliminar, solo ocultar).
 - Orden por iniciativa descendente; los empates conservan el orden de inserción.
 - Las anotaciones (de participante o globales) duran las rondas indicadas; `0` significa infinita.
-- Al cerrar una ronda, las anotaciones finitas de los participantes activos y las globales descuentan una ronda.
+- La duración se cuenta desde el turno en que se crea la anotación: descuenta una ronda cada vez que el turno vuelve a quien actuaba entonces y expira al llegar a 0 (p. ej., un efecto de 1 ronda creado en el turno del último dura hasta su siguiente turno, no hasta el cambio de ronda).
 - El encuentro se guarda en `localStorage`; los datos de versiones anteriores se migran automáticamente.
 
 ## Estructura

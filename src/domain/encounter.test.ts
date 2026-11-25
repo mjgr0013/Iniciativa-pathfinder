@@ -4,12 +4,10 @@ import {
   addGlobalAnnotation,
   addParticipant,
   advanceTurn,
-  completesRound,
   createDefaultEncounter,
-  expiringAnnotationIds,
+  expiredAnnotationIds,
   getCurrent,
   hideParticipant,
-  leavingCompletesRound,
   removeAnnotation,
   removeParticipant,
   restoreParticipant,
@@ -22,6 +20,18 @@ import type { Encounter } from "./types.ts";
 
 const names = (encounter: Encounter) => sortActive(encounter.participants).map((participant) => participant.name);
 const currentName = (encounter: Encounter) => getCurrent(encounter)?.name ?? null;
+
+/** Rondas restantes de cada anotación de un participante (o de las globales), por texto. */
+const remaining = (encounter: Encounter, participantId?: string) =>
+  Object.fromEntries(
+    (participantId
+      ? encounter.participants.find((participant) => participant.id === participantId)!.annotations
+      : encounter.globalAnnotations
+    ).map((annotation) => [annotation.text, annotation.remainingRounds]),
+  );
+
+const advance = (encounter: Encounter, times: number) =>
+  Array.from({ length: times }).reduce<Encounter>((state) => advanceTurn(state), encounter);
 
 function emptyEncounter(): Encounter {
   return { round: 1, participants: [], currentId: null, globalAnnotations: [] };
@@ -79,10 +89,9 @@ describe("avance de turno y rondas", () => {
   it("avanza al siguiente y, tras el último, vuelve al primero e incrementa la ronda", () => {
     let encounter = withParticipants(["A", 3], ["B", 2], ["C", 1]);
     expect(currentName(encounter)).toBe("A");
-    encounter = advanceTurn(encounter);
-    expect(currentName(encounter)).toBe("B");
-    encounter = advanceTurn(encounter);
-    expect(completesRound(encounter)).toBe(true);
+    encounter = advance(encounter, 2);
+    expect(currentName(encounter)).toBe("C");
+    expect(encounter.round).toBe(1);
     encounter = advanceTurn(encounter);
     expect(currentName(encounter)).toBe("A");
     expect(encounter.round).toBe(2);
@@ -108,23 +117,84 @@ describe("avance de turno y rondas", () => {
   });
 });
 
-describe("anotaciones", () => {
-  it("descuenta las finitas al completar la ronda, elimina las que llegan a 0 y mantiene las infinitas", () => {
-    let encounter = withParticipants(["A", 2], ["B", 1]);
+describe("duración de las anotaciones (se cuenta desde el turno en que empiezan)", () => {
+  it("un efecto de 1 ronda creado en el turno del último dura hasta que vuelve a actuar ese participante", () => {
+    let encounter = setCurrent(withParticipants(["A", 3], ["B", 2], ["C", 1]), "C");
     encounter = addAnnotation(encounter, "A", { id: "x", text: "aturdido", remainingRounds: 1 });
-    encounter = addAnnotation(encounter, "A", { id: "y", text: "bendecido", remainingRounds: 2 });
-    encounter = addAnnotation(encounter, "A", { id: "z", text: "maldito", remainingRounds: null });
     encounter = addGlobalAnnotation(encounter, { id: "g", text: "niebla", remainingRounds: 1 });
 
-    encounter = advanceTurn(encounter);
-    expect(expiringAnnotationIds(encounter)).toEqual(new Set(["x", "g"]));
-    encounter = advanceTurn(encounter);
+    encounter = advanceTurn(encounter); // ronda 2, turno de A: no expira al empezar la ronda
+    expect(encounter.round).toBe(2);
+    expect(remaining(encounter, "A")).toEqual({ aturdido: 1 });
+    expect(remaining(encounter)).toEqual({ niebla: 1 });
 
-    expect(encounter.participants[0]!.annotations).toEqual([
-      { id: "y", text: "bendecido", remainingRounds: 1 },
-      { id: "z", text: "maldito", remainingRounds: null },
-    ]);
-    expect(encounter.globalAnnotations).toEqual([]);
+    encounter = advanceTurn(encounter); // turno de B
+    expect(remaining(encounter, "A")).toEqual({ aturdido: 1 });
+
+    encounter = advanceTurn(encounter); // turno de C: se cumple la ronda
+    expect(remaining(encounter, "A")).toEqual({});
+    expect(remaining(encounter)).toEqual({});
+  });
+
+  it("un efecto de 2 rondas descuenta cada vez que vuelve el turno de quien lo inició", () => {
+    let encounter = setCurrent(withParticipants(["A", 3], ["B", 2], ["C", 1]), "B");
+    encounter = addAnnotation(encounter, "C", { id: "x", text: "bendecido", remainingRounds: 2 });
+    encounter = advance(encounter, 2); // C, A (ronda 2)
+    expect(remaining(encounter, "C")).toEqual({ bendecido: 2 });
+    encounter = advanceTurn(encounter); // B
+    expect(remaining(encounter, "C")).toEqual({ bendecido: 1 });
+    encounter = advance(encounter, 2); // C, A (ronda 3)
+    expect(remaining(encounter, "C")).toEqual({ bendecido: 1 });
+    encounter = advanceTurn(encounter); // B
+    expect(remaining(encounter, "C")).toEqual({});
+  });
+
+  it("las infinitas no expiran", () => {
+    let encounter = addAnnotation(withParticipants(["A", 2], ["B", 1]), "A", { id: "z", text: "maldito", remainingRounds: null });
+    encounter = advance(encounter, 10);
+    expect(remaining(encounter, "A")).toEqual({ maldito: null });
+  });
+
+  it("con un único participante, el efecto expira al volver su turno en la ronda siguiente", () => {
+    let encounter = addAnnotation(withParticipants(["A", 1]), "A", { id: "x", text: "x", remainingRounds: 1 });
+    encounter = advanceTurn(encounter);
+    expect(encounter.round).toBe(2);
+    expect(remaining(encounter, "A")).toEqual({});
+  });
+
+  it("si quien inició el efecto se oculta, el efecto cuenta al pasar por su posición en la iniciativa", () => {
+    let encounter = setCurrent(withParticipants(["A", 3], ["B", 2], ["C", 1]), "B");
+    encounter = addAnnotation(encounter, "A", { id: "x", text: "x", remainingRounds: 1 });
+    encounter = hideParticipant(encounter, "B"); // turno de C
+    encounter = advanceTurn(encounter); // ronda 2, turno de A
+    expect(remaining(encounter, "A")).toEqual({ x: 1 });
+    encounter = advanceTurn(encounter); // turno de C: se pasa por donde actuaba B
+    expect(remaining(encounter, "A")).toEqual({});
+  });
+
+  it("si quien inició el efecto se elimina, se usa la posición que tenía", () => {
+    let encounter = setCurrent(withParticipants(["A", 3], ["B", 2], ["C", 1]), "B");
+    encounter = addGlobalAnnotation(encounter, { id: "g", text: "niebla", remainingRounds: 1 });
+    encounter = removeParticipant(encounter, "B"); // turno de C
+    encounter = advanceTurn(encounter); // ronda 2, turno de A
+    expect(remaining(encounter)).toEqual({ niebla: 1 });
+    encounter = advanceTurn(encounter); // turno de C
+    expect(remaining(encounter)).toEqual({});
+  });
+
+  it("las anotaciones sin ancla (guardadas por versiones anteriores) descuentan al empezar la ronda", () => {
+    let encounter = withParticipants(["A", 2], ["B", 1]);
+    encounter = { ...encounter, globalAnnotations: [{ id: "g", text: "antigua", remainingRounds: 1, anchor: null }] };
+    encounter = advanceTurn(encounter);
+    expect(remaining(encounter)).toEqual({ antigua: 1 });
+    encounter = advanceTurn(encounter); // ronda 2
+    expect(remaining(encounter)).toEqual({});
+  });
+
+  it("cambiar el turno a mano no descuenta", () => {
+    let encounter = addAnnotation(withParticipants(["A", 3], ["B", 2], ["C", 1]), "A", { id: "x", text: "x", remainingRounds: 1 });
+    encounter = setCurrent(setCurrent(encounter, "C"), "A");
+    expect(remaining(encounter, "A")).toEqual({ x: 1 });
   });
 
   it("no descuenta las anotaciones de participantes ocultos", () => {
@@ -133,13 +203,21 @@ describe("anotaciones", () => {
     encounter = hideParticipant(encounter, "B");
     encounter = advanceTurn(encounter);
     expect(encounter.round).toBe(2);
-    expect(encounter.participants[1]!.annotations).toHaveLength(1);
+    expect(remaining(encounter, "B")).toEqual({ veneno: 1 });
   });
 
   it("permite quitar manualmente una anotación infinita", () => {
     let encounter = addAnnotation(withParticipants(["A", 1]), "A", { id: "z", text: "x", remainingRounds: null });
     encounter = removeAnnotation(encounter, "A", "z");
-    expect(encounter.participants[0]!.annotations).toEqual([]);
+    expect(remaining(encounter, "A")).toEqual({});
+  });
+
+  it("identifica las anotaciones que expiran con un cambio de turno", () => {
+    let encounter = setCurrent(withParticipants(["A", 2], ["B", 1]), "A");
+    encounter = addAnnotation(encounter, "B", { id: "x", text: "x", remainingRounds: 1 });
+    encounter = addGlobalAnnotation(encounter, { id: "g", text: "g", remainingRounds: 2 });
+    encounter = advanceTurn(encounter);
+    expect(expiredAnnotationIds(encounter, advanceTurn(encounter))).toEqual(new Set(["x"]));
   });
 });
 
@@ -148,25 +226,26 @@ describe("ocultar, restaurar y eliminar", () => {
     const encounter = hideParticipant(withParticipants(["A", 3], ["B", 2], ["C", 1]), "A");
     expect(currentName(encounter)).toBe("B");
     expect(encounter.round).toBe(1);
-    expect(leavingCompletesRound(withParticipants(["A", 3], ["B", 2]), "A")).toBe(false);
   });
 
   it("ocultar al último cuando tiene el turno cierra la ronda, como pulsar «Siguiente turno»", () => {
-    let encounter = setCurrent(withParticipants(["A", 3], ["B", 2], ["C", 1]), "C");
+    let encounter = withParticipants(["A", 3], ["B", 2], ["C", 1]);
     encounter = addAnnotation(encounter, "A", { id: "a1", text: "aturdido", remainingRounds: 1 });
     encounter = addAnnotation(encounter, "A", { id: "a2", text: "bendecido", remainingRounds: 3 });
-    encounter = addAnnotation(encounter, "C", { id: "c1", text: "veneno", remainingRounds: 2 });
     encounter = addGlobalAnnotation(encounter, { id: "g", text: "niebla", remainingRounds: 1 });
-    expect(expiringAnnotationIds(encounter, "C")).toEqual(new Set(["a1", "g"]));
+    encounter = advance(encounter, 2); // turno de C
+    encounter = addAnnotation(encounter, "C", { id: "c1", text: "veneno", remainingRounds: 2 });
 
-    encounter = hideParticipant(encounter, "C");
+    const hidden = hideParticipant(encounter, "C");
 
-    expect(currentName(encounter)).toBe("A");
-    expect(encounter.round).toBe(2);
-    expect(encounter.participants[0]!.annotations).toEqual([{ id: "a2", text: "bendecido", remainingRounds: 2 }]);
-    expect(encounter.globalAnnotations).toEqual([]);
+    expect(currentName(hidden)).toBe("A");
+    expect(hidden.round).toBe(2);
+    // Lo iniciado en el turno de A se cumple al volver a A.
+    expect(remaining(hidden, "A")).toEqual({ bendecido: 2 });
+    expect(remaining(hidden)).toEqual({});
     // El que sale queda fuera del descuento: conserva sus anotaciones intactas.
-    expect(encounter.participants[2]!.annotations).toEqual([{ id: "c1", text: "veneno", remainingRounds: 2 }]);
+    expect(remaining(hidden, "C")).toEqual({ veneno: 2 });
+    expect(expiredAnnotationIds(encounter, hidden, "C")).toEqual(new Set(["a1", "g"]));
   });
 
   it("eliminar al último cuando tiene el turno también cierra la ronda", () => {
@@ -197,7 +276,7 @@ describe("ocultar, restaurar y eliminar", () => {
   it("conserva las anotaciones al ocultar y restaurar", () => {
     let encounter = addAnnotation(withParticipants(["A", 1]), "A", { id: "x", text: "x", remainingRounds: 3 });
     encounter = restoreParticipant(hideParticipant(encounter, "A"), "A");
-    expect(encounter.participants[0]!.annotations).toHaveLength(1);
+    expect(remaining(encounter, "A")).toEqual({ x: 3 });
   });
 
   it("al eliminar al actual, el turno pasa al siguiente (igual que al ocultar)", () => {

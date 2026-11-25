@@ -1,4 +1,4 @@
-import { PRESET_IDS, type Annotation, type Encounter, type Participant, type PresetId } from "./types.ts";
+import { PRESET_IDS, type Annotation, type Encounter, type Participant, type PresetId, type TurnAnchor } from "./types.ts";
 
 export const PRESET_NAMES: Record<PresetId, string> = {
   gorr: "Gorr",
@@ -121,38 +121,86 @@ export function setCurrent(encounter: Encounter, id: string): Encounter {
   return isActive ? { ...encounter, currentId: id } : encounter;
 }
 
-/** Indica si avanzar el turno ahora cerraría la ronda. */
-export function completesRound(encounter: Encounter): boolean {
-  const active = sortActive(encounter.participants);
-  return active.length > 0 && active.at(-1)!.id === encounter.currentId;
+// ---------- Paso del turno y duración de las anotaciones ----------
+//
+// Una anotación de N rondas dura hasta que el turno vuelve N veces al punto de la iniciativa en que se
+// creó (su `anchor`). Así, un efecto creado en el turno del último participante no pierde una ronda
+// al empezar la siguiente: sigue hasta que vuelve a actuar ese participante.
+
+type Slot = Pick<Participant, "initiative" | "order">;
+
+/** Negativo si `a` actúa antes que `b` en la ronda (mismo criterio que `sortActive`). */
+function compareSlots(a: Slot, b: Slot): number {
+  return b.initiative - a.initiative || a.order - b.order;
+}
+
+/** Posición actual del ancla: la del participante si sigue en el encuentro (aunque esté oculto), o la guardada. */
+function anchorSlot(encounter: Encounter, anchor: TurnAnchor): Slot {
+  return encounter.participants.find((participant) => participant.id === anchor.participantId) ?? anchor;
+}
+
+export function anchorAtCurrentTurn(encounter: Encounter): TurnAnchor | null {
+  const current = getCurrent(encounter);
+  return current ? { participantId: current.id, initiative: current.initiative, order: current.order } : null;
 }
 
 /**
- * Indica si retirar (ocultar o eliminar) a `id` cerraría la ronda: es el turno actual, es el último
- * en actuar y quedan más participantes activos. Equivale a pulsar «Siguiente turno».
+ * Pasa el turno de quien lo tiene en `before` a `nextId`, sobre el estado `after` (que puede no incluir ya a
+ * quien lo tenía). Si da la vuelta a la lista, empieza una ronda nueva. Las anotaciones cuyo ancla queda
+ * en el tramo recorrido, (actual, siguiente], descuentan una ronda; las que llegan a 0 expiran.
  */
-export function leavingCompletesRound(encounter: Encounter, id: string): boolean {
-  return encounter.currentId === id && completesRound(encounter) && sortActive(encounter.participants).length > 1;
+function passTurn(before: Encounter, after: Encounter, nextId: string | null): Encounter {
+  const from = before.participants.find((participant) => participant.id === before.currentId);
+  const to = after.participants.find((participant) => participant.id === nextId);
+  if (!from || !to) return { ...after, currentId: nextId };
+
+  const wrapped = compareSlots(to, from) <= 0;
+  const isReached = (annotation: Annotation): boolean => {
+    if (annotation.anchor === null) return wrapped;
+    const slot = anchorSlot(before, annotation.anchor);
+    return wrapped
+      ? compareSlots(from, slot) < 0 || compareSlots(slot, to) <= 0
+      : compareSlots(from, slot) < 0 && compareSlots(slot, to) <= 0;
+  };
+  const tick = (annotations: readonly Annotation[]) => tickAnnotations(annotations, isReached);
+
+  return {
+    ...after,
+    currentId: nextId,
+    round: wrapped ? after.round + 1 : after.round,
+    participants: after.participants.map((participant) =>
+      participant.hidden ? participant : { ...participant, annotations: tick(participant.annotations) },
+    ),
+    globalAnnotations: tick(after.globalAnnotations),
+  };
 }
 
-/** Anotaciones que desaparecerán si se completa la ronda ahora (sin contar las de `excludeParticipantId`, que va a salir). */
-export function expiringAnnotationIds(encounter: Encounter, excludeParticipantId?: string): Set<string> {
-  const expiring = (annotations: Annotation[]) =>
-    annotations.filter((annotation) => annotation.remainingRounds === 1).map((annotation) => annotation.id);
-  return new Set([
-    ...encounter.participants
-      .filter((participant) => !participant.hidden && participant.id !== excludeParticipantId)
-      .flatMap((participant) => expiring(participant.annotations)),
-    ...expiring(encounter.globalAnnotations),
-  ]);
-}
-
-export function tickAnnotations(annotations: readonly Annotation[]): Annotation[] {
+/** Descuenta una ronda a las anotaciones finitas que cumplan `shouldTick` y elimina las que llegan a 0. */
+export function tickAnnotations(
+  annotations: readonly Annotation[],
+  shouldTick: (annotation: Annotation) => boolean = () => true,
+): Annotation[] {
   return annotations.flatMap((annotation) => {
-    if (annotation.remainingRounds === null) return [annotation];
+    if (annotation.remainingRounds === null || !shouldTick(annotation)) return [annotation];
     const remainingRounds = annotation.remainingRounds - 1;
     return remainingRounds > 0 ? [{ ...annotation, remainingRounds }] : [];
   });
+}
+
+/**
+ * Anotaciones (de participantes y globales) que existían en `before` y ya no están en `after`,
+ * sin contar las de `excludeParticipantId`. Sirve para animar las que expiran con un cambio de turno.
+ */
+export function expiredAnnotationIds(before: Encounter, after: Encounter, excludeParticipantId?: string): Set<string> {
+  const ids = (encounter: Encounter) =>
+    new Set([
+      ...encounter.participants
+        .filter((participant) => participant.id !== excludeParticipantId)
+        .flatMap((participant) => participant.annotations.map((annotation) => annotation.id)),
+      ...encounter.globalAnnotations.map((annotation) => annotation.id),
+    ]);
+  const remaining = ids(after);
+  return new Set([...ids(before)].filter((id) => !remaining.has(id)));
 }
 
 export function advanceTurn(encounter: Encounter): Encounter {
@@ -162,31 +210,17 @@ export function advanceTurn(encounter: Encounter): Encounter {
   const currentIndex = active.findIndex((participant) => participant.id === encounter.currentId);
   if (currentIndex === -1) return { ...encounter, currentId: active[0]!.id };
 
-  if (currentIndex < active.length - 1) return { ...encounter, currentId: active[currentIndex + 1]!.id };
-
-  return startNextRound(encounter);
-}
-
-/** Cierra la ronda: incrementa el contador, descuenta las anotaciones activas y globales y da el turno al primero. */
-function startNextRound(encounter: Encounter): Encounter {
-  return {
-    round: encounter.round + 1,
-    currentId: sortActive(encounter.participants)[0]?.id ?? null,
-    participants: encounter.participants.map((participant) =>
-      participant.hidden ? participant : { ...participant, annotations: tickAnnotations(participant.annotations) },
-    ),
-    globalAnnotations: tickAnnotations(encounter.globalAnnotations),
-  };
+  return passTurn(encounter, encounter, active[(currentIndex + 1) % active.length]!.id);
 }
 
 /**
- * Saca a `id` del orden activo con `withoutLeaving` (ya oculto o eliminado). Si tenía el turno,
- * este pasa al siguiente; si además era el último de la ronda, la ronda se cierra como al avanzar.
+ * Saca a `id` del orden activo con `withoutLeaving` (ya oculto o eliminado). Si tenía el turno, cuenta como
+ * terminarlo: el turno pasa al siguiente igual que al avanzar (cerrando la ronda si era el último).
+ * Si no queda nadie activo, no hay turno actual y la ronda no avanza.
  */
 function leaveTurnOrder(encounter: Encounter, id: string, withoutLeaving: Encounter): Encounter {
   if (encounter.currentId !== id) return withoutLeaving;
-  if (leavingCompletesRound(encounter, id)) return startNextRound(withoutLeaving);
-  return { ...withoutLeaving, currentId: successorOf(encounter, id) };
+  return passTurn(encounter, withoutLeaving, successorOf(encounter, id));
 }
 
 export function hideParticipant(encounter: Encounter, id: string): Encounter {
@@ -218,12 +252,16 @@ export function removeParticipant(encounter: Encounter, id: string): Encounter {
   });
 }
 
-export function addAnnotation(encounter: Encounter, participantId: string, annotation: Annotation): Encounter {
+export type NewAnnotation = Omit<Annotation, "anchor">;
+
+/** Las anotaciones nuevas se anclan al turno actual: su duración se cuenta desde aquí. */
+export function addAnnotation(encounter: Encounter, participantId: string, annotation: NewAnnotation): Encounter {
+  const anchored: Annotation = { ...annotation, anchor: anchorAtCurrentTurn(encounter) };
   return {
     ...encounter,
     participants: mapParticipant(encounter, participantId, (participant) => ({
       ...participant,
-      annotations: [...participant.annotations, annotation],
+      annotations: [...participant.annotations, anchored],
     })),
   };
 }
@@ -238,8 +276,9 @@ export function removeAnnotation(encounter: Encounter, participantId: string, an
   };
 }
 
-export function addGlobalAnnotation(encounter: Encounter, annotation: Annotation): Encounter {
-  return { ...encounter, globalAnnotations: [...encounter.globalAnnotations, annotation] };
+export function addGlobalAnnotation(encounter: Encounter, annotation: NewAnnotation): Encounter {
+  const anchored: Annotation = { ...annotation, anchor: anchorAtCurrentTurn(encounter) };
+  return { ...encounter, globalAnnotations: [...encounter.globalAnnotations, anchored] };
 }
 
 export function removeGlobalAnnotation(encounter: Encounter, annotationId: string): Encounter {

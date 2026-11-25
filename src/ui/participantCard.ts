@@ -1,5 +1,5 @@
 import { canRemove } from "../domain/encounter.ts";
-import type { Participant } from "../domain/types.ts";
+import type { Annotation, Participant } from "../domain/types.ts";
 import { createAnnotationChip } from "./annotationChip.ts";
 import { requiredElement } from "./dom.ts";
 import { initials, tokenTone } from "./initials.ts";
@@ -8,6 +8,7 @@ import { PRESET_TOKENS } from "./tokens.ts";
 export interface CardOptions {
   isCurrent: boolean;
   annotationFormOpen: boolean;
+  anchorName(annotation: Annotation): string | null;
 }
 
 const action = (card: HTMLElement, name: string) => requiredElement<HTMLButtonElement>(`[data-action="${name}"]`, card);
@@ -27,7 +28,7 @@ export function createParticipantCard(template: HTMLTemplateElement, participant
   name.textContent = participant.name;
   name.setAttribute("aria-label", `${participant.name}. Editar nombre`);
 
-  requiredElement(".annotations", card).append(...participant.annotations.map(createAnnotationChip));
+  requiredElement(".annotations", card).append(...participant.annotations.map((annotation) => createAnnotationChip(annotation, options.anchorName(annotation))));
 
   const toggleForm = action(card, "toggle-annotation-form");
   toggleForm.hidden = hidden;
