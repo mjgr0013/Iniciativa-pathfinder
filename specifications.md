@@ -70,6 +70,7 @@ Como director/a de juego, quiero avanzar con un botón para actualizar quién es
 - Al pulsar el botón de avanzar, el siguiente participante en orden de iniciativa pasa a ser el actual y la lista rota para mostrarlo primero.
 - Al avanzar desde el participante activo de menor iniciativa, el turno vuelve al de mayor iniciativa y comienza una nueva ronda.
 - Un separador en la lista indica dónde empieza la siguiente ronda.
+- Mientras el encuentro no ha empezado (ronda 1 y nadie ha actuado todavía), el turno es siempre del participante de mayor iniciativa: al añadir a alguien con más iniciativa, editar iniciativas o restaurar a un participante, el turno pasa a quien quede primero. Una vez alguien ha actuado, quien se incorpora con más iniciativa que el actual espera a la ronda siguiente.
 - Si no hay participantes activos, el botón no avanza el turno ni incrementa la ronda.
 - El director puede dar el turno a otro participante con doble clic en su tarjeta (o pulsación larga en pantallas táctiles), tras confirmarlo; un clic simple no cambia el turno.
 
@@ -193,6 +194,7 @@ Como director/a de juego, quiero reiniciar el encuentro para empezar de nuevo si
 - La lista activa se ordena de mayor a menor iniciativa, por lo que el número más alto actúa primero.
 - En caso de empate, se mantiene el orden de inserción.
 - El participante actual es el primero de la lista activa.
+- Antes de que nadie actúe (ronda 1 con el turno en el de mayor iniciativa), el turno sigue al de mayor iniciativa aunque cambie el orden; nadie queda relegado a la ronda 2 por añadirse antes de empezar.
 - El avance del turno rota el orden activo para mantener al participante actual en la primera posición.
 - Una ronda se considera completada cuando todos los participantes activos han actuado y el turno vuelve al primero.
 - Ocultar o eliminar al participante actual cuenta como terminar su turno; si era el último de la ronda, la ronda se completa. Si no queda ningún otro participante activo, la ronda no avanza.

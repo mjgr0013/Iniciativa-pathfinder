@@ -78,10 +78,57 @@ describe("orden de iniciativa", () => {
     expect(encounter.currentId).toBe("V");
   });
 
-  it("mantiene el turno al cambiar la iniciativa del actual", () => {
-    const encounter = updateParticipant(withParticipants(["A", 10], ["B", 5]), "A", { initiative: 1 });
-    expect(names(encounter)).toEqual(["B", "A"]);
-    expect(encounter.currentId).toBe("A");
+  it("una vez empezado el encuentro, mantiene el turno al cambiar la iniciativa del actual", () => {
+    let encounter = advanceTurn(withParticipants(["A", 10], ["B", 5], ["C", 1])); // turno de B
+    encounter = updateParticipant(encounter, "B", { initiative: 20 });
+    expect(names(encounter)).toEqual(["B", "A", "C"]);
+    expect(encounter.currentId).toBe("B");
+  });
+});
+
+describe("antes de que nadie actúe (ronda 1, turno en el primero)", () => {
+  it("caso reportado: al añadir a alguien con más iniciativa, pasa a tener el turno y no queda para la ronda 2", () => {
+    const encounter = addParticipant(createDefaultEncounter(), "orco", { name: "Orco", initiative: 15, hidden: false });
+    expect(currentName(encounter)).toBe("Orco");
+    expect(turnOrder(encounter).nextRoundIndex).toBeNull();
+    expect(encounter.round).toBe(1);
+  });
+
+  it("al editar iniciativas, el turno sigue al de mayor iniciativa", () => {
+    let encounter = createDefaultEncounter();
+    encounter = updateParticipant(encounter, "preset-lyra", { initiative: 18 });
+    expect(currentName(encounter)).toBe("Lyra");
+    encounter = updateParticipant(encounter, "preset-gorr", { initiative: 20 });
+    expect(currentName(encounter)).toBe("Gorr");
+    encounter = updateParticipant(encounter, "preset-gorr", { initiative: 2 });
+    expect(currentName(encounter)).toBe("Lyra");
+    expect(turnOrder(encounter).nextRoundIndex).toBeNull();
+  });
+
+  it("al restaurar a alguien con más iniciativa, pasa a tener el turno", () => {
+    let encounter = hideParticipant(withParticipants(["A", 10], ["B", 5]), "B");
+    encounter = updateParticipant(encounter, "B", { initiative: 30 });
+    encounter = restoreParticipant(encounter, "B");
+    expect(currentName(encounter)).toBe("B");
+  });
+
+  it("añadir a alguien oculto no cambia el turno", () => {
+    const encounter = addParticipant(withParticipants(["A", 10]), "H", { name: "H", initiative: 99, hidden: true });
+    expect(currentName(encounter)).toBe("A");
+  });
+
+  it("una vez alguien ha actuado, quien se añade con más iniciativa espera a la ronda siguiente", () => {
+    let encounter = advanceTurn(withParticipants(["A", 10], ["B", 5])); // turno de B
+    encounter = addParticipant(encounter, "C", { name: "C", initiative: 20, hidden: false });
+    expect(currentName(encounter)).toBe("B");
+    expect(turnOrder(encounter).participants.map((p) => p.name)).toEqual(["B", "C", "A"]);
+    expect(turnOrder(encounter).nextRoundIndex).toBe(1);
+  });
+
+  it("en rondas posteriores, aunque el turno esté en el primero, no se le quita el turno", () => {
+    let encounter = advance(withParticipants(["A", 10], ["B", 5]), 2); // R2, A
+    encounter = addParticipant(encounter, "C", { name: "C", initiative: 20, hidden: false });
+    expect(currentName(encounter)).toBe("A");
   });
 });
 

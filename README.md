@@ -8,6 +8,7 @@ Aplicación web (TypeScript + Vite, sin backend) para gestionar iniciativa, rond
 - Orden por iniciativa descendente; los empates conservan el orden de inserción. La lista se muestra rotada desde el turno actual, con un separador donde empieza la siguiente ronda.
 - «Siguiente turno» avanza; para dar el turno a otro participante a mano: doble clic (o pulsación larga en móvil) y confirmar.
 - Nombre e iniciativa se editan en línea pulsando sobre ellos.
+- Hasta que alguien actúa, el turno es del de mayor iniciativa (añadir o editar iniciativas lo reajusta).
 - Ocultar o eliminar al participante actual cuenta como terminar su turno.
 - Las anotaciones (de participante o globales) duran las rondas indicadas; `0` significa infinita.
 - Toda anotación (de participante o global) la desencadena quien tiene el turno al añadirla: descuenta una ronda cada vez que vuelve su turno y expira al llegar a 0. Las finitas muestran «hasta [token]» con el retrato o las iniciales de ese participante.

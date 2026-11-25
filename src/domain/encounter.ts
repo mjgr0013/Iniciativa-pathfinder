@@ -85,6 +85,24 @@ function successorOf(encounter: Encounter, leavingId: string): string | null {
   return remaining[0]?.id ?? null;
 }
 
+/**
+ * El encuentro aún no ha empezado: ronda 1 y el turno en el primero de la iniciativa (o sin turno). Es la única
+ * forma de estar ahí sin que nadie haya actuado, ya que volver al primero siempre empieza una ronda nueva.
+ */
+export function hasNotStarted(encounter: Encounter): boolean {
+  if (encounter.round !== 1) return false;
+  return encounter.currentId === null || encounter.currentId === sortActive(encounter.participants)[0]?.id;
+}
+
+/**
+ * Mientras nadie ha actuado, el turno sigue al de mayor iniciativa aunque cambie el orden (al añadir,
+ * editar iniciativas o restaurar). Así quien se añade con más iniciativa empieza el encuentro, en vez de
+ * quedar para la ronda 2.
+ */
+function keepTurnAtStart(before: Encounter, after: Encounter): Encounter {
+  return hasNotStarted(before) ? { ...after, currentId: sortActive(after.participants)[0]?.id ?? null } : after;
+}
+
 export interface NewParticipant {
   name: string;
   initiative: number;
@@ -101,11 +119,11 @@ export function addParticipant(encounter: Encounter, id: string, input: NewParti
     order: nextOrder(encounter.participants),
     presetId: null,
   };
-  return {
+  return keepTurnAtStart(encounter, {
     ...encounter,
     participants: [...encounter.participants, participant],
     currentId: encounter.currentId ?? (input.hidden ? null : id),
-  };
+  });
 }
 
 export function updateParticipant(
@@ -113,7 +131,10 @@ export function updateParticipant(
   id: string,
   changes: Partial<Pick<Participant, "name" | "initiative">>,
 ): Encounter {
-  return { ...encounter, participants: mapParticipant(encounter, id, (participant) => ({ ...participant, ...changes })) };
+  return keepTurnAtStart(encounter, {
+    ...encounter,
+    participants: mapParticipant(encounter, id, (participant) => ({ ...participant, ...changes })),
+  });
 }
 
 export function setCurrent(encounter: Encounter, id: string): Encounter {
@@ -233,11 +254,11 @@ export function hideParticipant(encounter: Encounter, id: string): Encounter {
 }
 
 export function restoreParticipant(encounter: Encounter, id: string): Encounter {
-  return {
+  return keepTurnAtStart(encounter, {
     ...encounter,
     participants: mapParticipant(encounter, id, (participant) => ({ ...participant, hidden: false })),
     currentId: encounter.currentId ?? id,
-  };
+  });
 }
 
 /** Los participantes predeterminados no se pueden eliminar, solo ocultar. */
