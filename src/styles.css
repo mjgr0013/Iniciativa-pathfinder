@@ -68,7 +68,7 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
 .section-heading h2, .section-heading h1 { margin: 4px 0 0; font-family: 'Space Grotesk', sans-serif; font-size: 1.16rem; }
 .heading-icon { width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid rgba(196, 223, 120, .25); border-radius: 10px; background: rgba(196, 223, 120, .08); color: var(--accent); }
 .participant-form { display: grid; grid-template-columns: minmax(0, 1fr) 92px; gap: 12px; }
-.participant-form label, .annotation-form label { display: grid; align-content: start; gap: 7px; color: #c5ccbb; font-size: .75rem; font-weight: 600; }
+.participant-form label, .annotation-form label { display: grid; align-content: start; gap: 7px; color: #c5ccbb; font-size: .75rem; font-weight: 600; line-height: 1.25; }
 input { width: 100%; min-width: 0; height: 42px; border: 1px solid var(--border); border-radius: 9px; padding: 9px 11px; background: #111711; color: var(--text); font-size: .84rem; }
 input::placeholder { color: #697565; }
 .add-participant-actions { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -86,7 +86,7 @@ input::placeholder { color: #697565; }
 .form-error::before { content: "⚠ "; }
 input[aria-invalid="true"] { border-color: var(--danger); }
 .annotation.is-infinite .annotation-duration::before { content: "∞ "; }
-.label-hint { color: var(--subtle); font-size: .66rem; font-weight: 500; }
+.label-hint { margin-top: -3px; color: var(--subtle); font-size: .66rem; font-weight: 500; }
 .empty-state { margin: 0; padding: 15px; border: 1px dashed var(--border); border-radius: 11px; color: var(--muted); font-size: .82rem; line-height: 1.5; }
 .global-panel .empty-state { width: 100%; padding: 12px; font-size: .75rem; }
 .initiative-heading { margin: 3px 0 4px; }
@@ -114,10 +114,11 @@ input[aria-invalid="true"] { border-color: var(--danger); }
 .current-label { border: 1px solid rgba(227, 189, 103, .5); border-radius: 999px; padding: 4px 7px; color: #efd38e; font-size: .58rem; font-weight: 800; letter-spacing: .08em; }
 .participant-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 6px; }
 .participant-actions .button { white-space: nowrap; }
-.participant-annotation-form { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(157, 167, 149, .14); }
+.participant-annotation-form { display: flex; flex-wrap: wrap; align-items: start; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(157, 167, 149, .14); }
 .participant-annotation-form .annotation-text-field { flex: 1 1 160px; }
 .participant-annotation-form .round-input { flex: 0 1 125px; }
-.participant-annotation-form .button { flex: 0 0 auto; }
+/* Alinea el botón con los inputs: salta la línea de la etiqueta (font-size × line-height) más el gap. */
+.participant-annotation-form .button { flex: 0 0 auto; height: 42px; margin-top: calc(.75rem * 1.25 + 7px); }
 .hidden-section { margin-top: 24px; border: 1px solid var(--border); border-radius: 14px; background: rgba(24, 30, 24, .65); }
 .hidden-toggle { width: 100%; min-height: 66px; display: flex; align-items: center; gap: 12px; border: 0; border-radius: inherit; padding: 12px 16px; background: transparent; color: var(--text); text-align: left; }
 .hidden-heading-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; background: var(--surface-raised); color: var(--muted); }
