@@ -9,6 +9,7 @@ import {
   expiringAnnotationIds,
   getCurrent,
   hideParticipant,
+  leavingCompletesRound,
   removeAnnotation,
   removeParticipant,
   restoreParticipant,
@@ -147,12 +148,43 @@ describe("ocultar, restaurar y eliminar", () => {
     const encounter = hideParticipant(withParticipants(["A", 3], ["B", 2], ["C", 1]), "A");
     expect(currentName(encounter)).toBe("B");
     expect(encounter.round).toBe(1);
+    expect(leavingCompletesRound(withParticipants(["A", 3], ["B", 2]), "A")).toBe(false);
   });
 
-  it("al ocultar al último actual, el turno vuelve al primero", () => {
+  it("ocultar al último cuando tiene el turno cierra la ronda, como pulsar «Siguiente turno»", () => {
     let encounter = setCurrent(withParticipants(["A", 3], ["B", 2], ["C", 1]), "C");
+    encounter = addAnnotation(encounter, "A", { id: "a1", text: "aturdido", remainingRounds: 1 });
+    encounter = addAnnotation(encounter, "A", { id: "a2", text: "bendecido", remainingRounds: 3 });
+    encounter = addAnnotation(encounter, "C", { id: "c1", text: "veneno", remainingRounds: 2 });
+    encounter = addGlobalAnnotation(encounter, { id: "g", text: "niebla", remainingRounds: 1 });
+    expect(expiringAnnotationIds(encounter, "C")).toEqual(new Set(["a1", "g"]));
+
     encounter = hideParticipant(encounter, "C");
+
     expect(currentName(encounter)).toBe("A");
+    expect(encounter.round).toBe(2);
+    expect(encounter.participants[0]!.annotations).toEqual([{ id: "a2", text: "bendecido", remainingRounds: 2 }]);
+    expect(encounter.globalAnnotations).toEqual([]);
+    // El que sale queda fuera del descuento: conserva sus anotaciones intactas.
+    expect(encounter.participants[2]!.annotations).toEqual([{ id: "c1", text: "veneno", remainingRounds: 2 }]);
+  });
+
+  it("eliminar al último cuando tiene el turno también cierra la ronda", () => {
+    const encounter = removeParticipant(setCurrent(withParticipants(["A", 3], ["B", 2], ["C", 1]), "C"), "C");
+    expect(currentName(encounter)).toBe("A");
+    expect(encounter.round).toBe(2);
+  });
+
+  it("retirar al último sin que tenga el turno no cierra la ronda", () => {
+    const encounter = hideParticipant(withParticipants(["A", 3], ["B", 2], ["C", 1]), "C");
+    expect(currentName(encounter)).toBe("A");
+    expect(encounter.round).toBe(1);
+  });
+
+  it("retirar al único participante activo no cierra la ronda: no queda nadie que actúe", () => {
+    const encounter = hideParticipant(withParticipants(["A", 1]), "A");
+    expect(encounter.round).toBe(1);
+    expect(encounter.currentId).toBeNull();
   });
 
   it("si no quedan activos no hay turno actual, y al restaurar se recupera", () => {

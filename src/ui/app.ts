@@ -1,4 +1,4 @@
-import { completesRound, expiringAnnotationIds, getCurrent, sortHidden, turnOrder } from "../domain/encounter.ts";
+import { completesRound, expiringAnnotationIds, getCurrent, leavingCompletesRound, sortHidden, turnOrder } from "../domain/encounter.ts";
 import { parseAnnotationText, parseInitiative, parseName, parseRounds } from "../domain/validation.ts";
 import type { EncounterState, EncounterStore } from "../store.ts";
 import { createAnnotationChip } from "./annotationChip.ts";
@@ -101,12 +101,13 @@ export function mountApp(store: EncounterStore): void {
 
   // ---------- Acciones ----------
 
-  async function advanceTurn(): Promise<void> {
-    const state = store.getState();
-    if (ui.advancing || !getCurrent(state)) return;
-
-    if (completesRound(state)) {
-      const expiring = expiringAnnotationIds(state);
+  /**
+   * Ejecuta un cambio de turno. Si cierra la ronda, primero anima las anotaciones que van a expirar
+   * y bloquea el avance mientras tanto, para no encadenar dos cambios de turno.
+   */
+  async function changeTurn(closesRound: boolean, expiring: Set<string>, change: () => void): Promise<void> {
+    if (ui.advancing) return;
+    if (closesRound) {
       const chips = [...el.workspace.querySelectorAll<HTMLElement>(".annotation[data-annotation-id]")]
         .filter((chip) => expiring.has(chip.dataset.annotationId!));
       ui.advancing = true;
@@ -114,9 +115,20 @@ export function mountApp(store: EncounterStore): void {
       await animateOut(chips);
       ui.advancing = false;
     }
-
-    actions().nextTurn();
+    change();
     requestAnimationFrame(scrollCurrentIntoView);
+  }
+
+  function advanceTurn(): Promise<void> {
+    const state = store.getState();
+    if (!getCurrent(state)) return Promise.resolve();
+    return changeTurn(completesRound(state), expiringAnnotationIds(state), () => actions().nextTurn());
+  }
+
+  /** Ocultar o eliminar al que tiene el turno cuenta como terminar su turno (ver `leavingCompletesRound`). */
+  function leaveTurnOrder(id: string, leave: () => void): Promise<void> {
+    const state = store.getState();
+    return changeTurn(leavingCompletesRound(state, id), expiringAnnotationIds(state, id), leave);
   }
 
   async function removeAnnotation(chip: HTMLElement, participantId: string | undefined): Promise<void> {
@@ -137,7 +149,7 @@ export function mountApp(store: EncounterStore): void {
     });
     if (confirmed) {
       ui.openAnnotationForms.delete(id);
-      actions().removeParticipant(id);
+      await leaveTurnOrder(id, () => actions().removeParticipant(id));
     }
   }
 
@@ -215,7 +227,7 @@ export function mountApp(store: EncounterStore): void {
       case "edit-name": return editField(button, participantId, "name");
       case "edit-initiative": return editField(button, participantId, "initiative");
       case "toggle-annotation-form": return toggleAnnotationForm(card, participantId, button);
-      case "hide": return actions().hideParticipant(participantId);
+      case "hide": return void leaveTurnOrder(participantId, () => actions().hideParticipant(participantId));
       case "restore": return actions().restoreParticipant(participantId);
       case "remove": return void removeParticipant(participantId);
     }

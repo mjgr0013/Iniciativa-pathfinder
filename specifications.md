@@ -101,6 +101,7 @@ Como director/a de juego, quiero ocultar a un participante que ha muerto para re
 - El usuario puede expandir la sección para revisar los participantes ocultos y volver a mostrarlos.
 - Los participantes ocultos no reciben turnos ni afectan al avance de la ronda.
 - Si se oculta al participante actual, el siguiente participante activo pasa a ser el actual; si no quedan participantes activos, no hay turno actual.
+- Si el participante actual es el último de la ronda y se oculta o elimina, equivale a pulsar el botón de avanzar: la ronda se completa, las anotaciones finitas de los participantes que siguen activos descuentan una ronda y el turno pasa al primero. Las anotaciones del participante retirado no se descuentan.
 - Si se vuelve a mostrar un participante, se incorpora de nuevo al orden activo según su iniciativa y las reglas de desempate.
 - Ocultar a un participante no elimina sus anotaciones ni sus datos.
 
@@ -178,6 +179,7 @@ Como director/a de juego, quiero reiniciar el encuentro para empezar de nuevo si
 - El participante actual es el primero de la lista activa.
 - El avance del turno rota el orden activo para mantener al participante actual en la primera posición.
 - Una ronda se considera completada cuando todos los participantes activos han actuado y el turno vuelve al primero.
+- Ocultar o eliminar al participante actual cuenta como terminar su turno; si era el último de la ronda, la ronda se completa. Si no queda ningún otro participante activo, la ronda no avanza.
 - Las anotaciones finitas de participantes activos descuentan duración al completar una ronda; las infinitas no expiran automáticamente.
 - Los participantes ocultos permanecen guardados en el estado del encuentro, en una sección colapsada al final, y no actúan hasta que se restauren.
 - Reiniciar requiere confirmación y restablece todos los datos del encuentro a los participantes predeterminados.
