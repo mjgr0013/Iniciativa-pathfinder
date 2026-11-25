@@ -227,8 +227,27 @@ export function mountApp(store: EncounterStore): void {
     }
   });
 
-  // Dar el turno a mano: doble clic (escritorio) o pulsación larga (táctil) en una zona libre de una tarjeta activa.
-  // Un clic simple no hace nada, para evitar cambios de turno accidentales.
+  // Dar el turno a mano: doble clic (escritorio) o pulsación larga (táctil) en una zona libre de una tarjeta activa,
+  // siempre con confirmación. Un clic simple no hace nada, para evitar cambios de turno accidentales.
+
+  async function giveTurnManually(id: string): Promise<void> {
+    const state = store.getState();
+    const target = state.participants.find((participant) => participant.id === id);
+    const current = getCurrent(state);
+    if (!target || target.hidden || current?.id === id || ui.advancing) return;
+    const confirmed = await confirmAction(el.confirmDialog, {
+      title: `¿Dar el turno a ${target.name}?`,
+      message: current
+        ? `Ahora es el turno de ${current.name}. El turno pasará a ${target.name} sin cambiar de ronda ni descontar anotaciones.`
+        : `El turno pasará a ${target.name} sin cambiar de ronda ni descontar anotaciones.`,
+      confirmLabel: "Dar el turno",
+      tone: "primary",
+    });
+    if (confirmed) {
+      actions().setCurrentParticipant(id);
+      requestAnimationFrame(scrollCurrentIntoView);
+    }
+  }
 
   /** Id del participante activo cuya tarjeta se ha tocado fuera de botones, campos y anotaciones. */
   function turnTargetAt(target: EventTarget | null): string | null {
@@ -245,15 +264,21 @@ export function mountApp(store: EncounterStore): void {
   });
   el.activeList.addEventListener("dblclick", (event) => {
     const id = turnTargetAt(event.target);
-    if (id && !doubleClickStartedOnControl) actions().setCurrentParticipant(id);
+    if (id && !doubleClickStartedOnControl) void giveTurnManually(id);
   });
 
   const LONG_PRESS_MS = 500;
   const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
-  let longPress: { timer: number; x: number; y: number } | null = null;
+  /**
+   * Pulsación larga en curso. Al cumplirse el tiempo queda `ready` (con vibración y resalte), pero el diálogo
+   * se abre al levantar el dedo: si se abriera antes, al soltar podría pulsarse sin querer un botón del diálogo.
+   */
+  let longPress: { id: string; card: HTMLElement; timer: number; x: number; y: number; ready: boolean } | null = null;
   let lastPointerType = "mouse";
   const cancelLongPress = () => {
-    if (longPress) window.clearTimeout(longPress.timer);
+    if (!longPress) return;
+    window.clearTimeout(longPress.timer);
+    longPress.card.classList.remove("is-long-pressed");
     longPress = null;
   };
 
@@ -262,22 +287,32 @@ export function mountApp(store: EncounterStore): void {
     cancelLongPress();
     const id = turnTargetAt(event.target);
     if (event.pointerType === "mouse" || !id) return;
-    longPress = {
+    const card = ui.activeCards.get(id)!;
+    const press = {
+      id,
+      card,
       x: event.clientX,
       y: event.clientY,
+      ready: false,
       timer: window.setTimeout(() => {
-        longPress = null;
+        press.ready = true;
+        card.classList.add("is-long-pressed");
         navigator.vibrate?.(15);
-        actions().setCurrentParticipant(id);
       }, LONG_PRESS_MS),
     };
+    longPress = press;
+  });
+  el.activeList.addEventListener("pointerup", () => {
+    const press = longPress;
+    cancelLongPress();
+    if (press?.ready) void giveTurnManually(press.id);
   });
   el.activeList.addEventListener("pointermove", (event) => {
     if (longPress && Math.hypot(event.clientX - longPress.x, event.clientY - longPress.y) > LONG_PRESS_MOVE_TOLERANCE_PX) {
       cancelLongPress();
     }
   });
-  ["pointerup", "pointercancel", "pointerleave"].forEach((type) => el.activeList.addEventListener(type, cancelLongPress));
+  ["pointercancel", "pointerleave"].forEach((type) => el.activeList.addEventListener(type, cancelLongPress));
   // En táctil, la pulsación larga abriría el menú contextual del navegador sobre la tarjeta.
   el.activeList.addEventListener("contextmenu", (event) => {
     if (lastPointerType !== "mouse" && turnTargetAt(event.target)) event.preventDefault();
