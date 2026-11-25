@@ -1,23 +1,37 @@
 # Iniciativa Pathfinder
 
-Aplicación web TypeScript para gestionar iniciativa, rondas y anotaciones temporales o infinitas en encuentros de Pathfinder. Usa Zustand para el estado y guarda el encuentro en `localStorage`.
+Aplicación web (TypeScript + Vite, sin backend) para gestionar iniciativa, rondas y anotaciones temporales o infinitas en encuentros de Pathfinder. La especificación funcional está en [`specifications.md`](specifications.md).
 
 ## Comportamiento
 
-- Incluye por defecto a Gorr, Lyra, Caedren, Kumiko, Adriana y Shary.
-- Los turnos respetan iniciativa descendente y orden de inserción en caso de empate.
-- Las anotaciones de personajes y globales duran las rondas indicadas; `0` significa que no expiran.
-- Las anotaciones globales descuentan rondas al completarse cada vuelta, igual que las de participantes activos.
-- Los datos previos se migran conservando el estado y las anotaciones.
+- Incluye por defecto a Gorr, Lyra, Caedren, Kumiko, Adriana y Shary (no se pueden eliminar, solo ocultar).
+- Orden por iniciativa descendente; los empates conservan el orden de inserción.
+- Las anotaciones (de participante o globales) duran las rondas indicadas; `0` significa infinita.
+- Al cerrar una ronda, las anotaciones finitas de los participantes activos y las globales descuentan una ronda.
+- El encuentro se guarda en `localStorage`; los datos de versiones anteriores se migran automáticamente.
 
-## Desarrollo y compilación
+## Estructura
 
-Requiere Node.js 20.19+ o 22.12+.
-
-```sh
-npm install
-npm run dev
-npm run build
+```
+src/
+  domain/        Lógica pura del encuentro (sin DOM) y validación de entradas — cubierta por tests
+  persistence.ts Carga/guardado en localStorage y migración de esquemas antiguos
+  store.ts       Store de Zustand: delega cada acción en el dominio
+  ui/            Render y eventos (delegados) del DOM
+  main.ts        Punto de entrada
 ```
 
-La compilación de producción queda en `dist/`; `npm run preview` permite verificarla localmente.
+## Desarrollo
+
+Requiere Node.js 20.19+ o 22.12+ y Yarn 1.
+
+```sh
+yarn install
+yarn dev        # servidor de desarrollo
+yarn test       # tests unitarios (Vitest)
+yarn check      # comprobación de tipos
+yarn build      # build de producción en dist/
+yarn preview    # sirve el build localmente
+```
+
+Cada push a `main` ejecuta tests y build, y publica `dist/` en GitHub Pages.

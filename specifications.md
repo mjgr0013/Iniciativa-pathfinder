@@ -181,8 +181,15 @@ Como director/a de juego, quiero reiniciar el encuentro para empezar de nuevo si
 - Las anotaciones finitas de participantes activos descuentan duración al completar una ronda; las infinitas no expiran automáticamente.
 - Los participantes ocultos permanecen guardados en el estado del encuentro, en una sección colapsada al final, y no actúan hasta que se restauren.
 - Reiniciar requiere confirmación y restablece todos los datos del encuentro a los participantes predeterminados.
+- La lista activa se muestra rotada a partir del participante actual; un separador indica dónde empieza la siguiente ronda (el participante de mayor iniciativa).
+- El estado del encuentro se conserva en el navegador (`localStorage`) al cerrar o recargar la página. Los datos guardados por versiones anteriores se migran automáticamente; si están corruptos, se inicia un encuentro nuevo.
+- Los participantes predeterminados no se pueden eliminar permanentemente; solo ocultar.
+- No existe una acción para volver a una ronda o turno anterior; el avance es solo hacia delante.
 
-## Pendiente de decisión
+## Funcionalidades adicionales
 
-- Si el estado del encuentro debe conservarse al cerrar o recargar el navegador.
-- Si se necesita una acción explícita para volver a una ronda anterior.
+Comportamientos presentes en la aplicación que amplían esta especificación:
+
+- **Anotaciones globales:** anotaciones del encuentro no asociadas a ningún participante; descuentan duración al completar cada ronda igual que las de los participantes activos.
+- **Añadir oculto:** un participante puede añadirse directamente a la sección de ocultos.
+- **Cambiar el turno manualmente:** al seleccionar una tarjeta activa, ese participante pasa a ser el actual (sin cambiar la ronda).
